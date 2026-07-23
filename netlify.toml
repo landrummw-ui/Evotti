@@ -1,0 +1,10 @@
+# Headers only — build command and publish directory stay under the
+# Netlify dashboard's control, so nothing here can break the deploy.
+
+# Keep this project out of search results. Sent on every response,
+# including images and other assets that a <meta> tag cannot cover.
+[[headers]]
+  for = "/*"
+
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive, nosnippet"
