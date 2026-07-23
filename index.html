@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evotti Apps</title>
+<meta name="description" content="Internal application platform for Evotti Boats.">
+<style>
+  :root {
+    --bg: #0b0b0d;
+    --surface: #141518;
+    --surface-hi: #1c1e22;
+    --border: #26282e;
+    --border-hi: #3a3d45;
+    --text: #f4f5f7;
+    --muted: #8b8e97;
+    --faint: #5c5f68;
+    --accent: #8ab4d4;
+    --live: #6ec48a;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto,
+                 Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+
+  /* Faint cool wash at the top, echoing the water imagery on evotti.com */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0 0 auto 0;
+    height: 420px;
+    background: radial-gradient(ellipse 80% 100% at 50% 0%,
+                rgba(138, 180, 212, 0.10), transparent 70%);
+    pointer-events: none;
+  }
+
+  .wrap {
+    position: relative;
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 24px 96px;
+  }
+
+  header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 36px 0 0;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 28px;
+  }
+
+  .wordmark {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.34em;
+    text-transform: uppercase;
+  }
+
+  .wordmark span {
+    font-weight: 300;
+    color: var(--muted);
+  }
+
+  .env {
+    margin-left: auto;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--faint);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px 12px;
+  }
+
+  .hero { padding: 72px 0 56px; }
+
+  .eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 20px;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(30px, 5vw, 46px);
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    line-height: 1.12;
+    max-width: 18ch;
+  }
+
+  .hero p {
+    margin: 20px 0 0;
+    color: var(--muted);
+    font-size: 17px;
+    max-width: 56ch;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+    gap: 16px;
+  }
+
+  .tile {
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    min-height: 178px;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.18s ease, border-color 0.18s ease,
+                background 0.18s ease;
+  }
+
+  a.tile:hover,
+  a.tile:focus-visible {
+    background: var(--surface-hi);
+    border-color: var(--border-hi);
+    transform: translateY(-3px);
+    outline: none;
+  }
+
+  a.tile:focus-visible { border-color: var(--accent); }
+
+  .tile.soon { opacity: 0.5; cursor: default; }
+
+  .tile h2 {
+    margin: 0 0 8px;
+    font-size: 17px;
+    font-weight: 650;
+    letter-spacing: 0.01em;
+  }
+
+  .tile p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .tile footer {
+    margin-top: auto;
+    padding-top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .tile.live footer { color: var(--live); }
+
+  .arrow {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 15px;
+    transition: transform 0.18s ease;
+  }
+
+  a.tile:hover .arrow { transform: translateX(3px); }
+
+  .foot {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--faint);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+  }
+
+  @media (max-width: 560px) {
+    .hero { padding: 48px 0 40px; }
+    header { flex-wrap: wrap; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="wordmark">Evotti <span>Apps</span></div>
+    <div class="env">Preview</div>
+  </header>
+
+  <section class="hero">
+    <p class="eyebrow">The Evolution Begins</p>
+    <h1>Every tool your team runs on, in one place.</h1>
+    <p>
+      A single platform for the systems behind the boats &mdash; starting with
+      how leads move from the Boat Builder to the dealer who closes them.
+    </p>
+  </section>
+
+  <main class="grid">
+
+    <a class="tile live" href="crm/">
+      <h2>Evotti CRM</h2>
+      <p>Track Boat Builder leads from first configuration through dealer
+         assignment, quote, and delivered build.</p>
+      <footer>
+        <span class="dot"></span> Live
+        <span class="arrow">&rarr;</span>
+      </footer>
+    </a>
+
+    <div class="tile soon">
+      <h2>Dealer Portal</h2>
+      <p>Give each dealer their own queue, quoting tools, and shared visibility
+         into build status.</p>
+      <footer><span class="dot"></span> Planned</footer>
+    </div>
+
+    <div class="tile soon">
+      <h2>Build Tracker</h2>
+      <p>Follow a hull from order through the floor to shipment, with dates
+         dealers and buyers can rely on.</p>
+      <footer><span class="dot"></span> Planned</footer>
+    </div>
+
+    <div class="tile soon">
+      <h2>Warranty &amp; Service</h2>
+      <p>Log claims against a specific hull, route them to the dealer, and spot
+         issues repeating across a series.</p>
+      <footer><span class="dot"></span> Planned</footer>
+    </div>
+
+    <div class="tile soon">
+      <h2>Options &amp; Pricing</h2>
+      <p>One source of truth for configurations and price, feeding the Boat
+         Builder and every dealer quote.</p>
+      <footer><span class="dot"></span> Planned</footer>
+    </div>
+
+    <div class="tile soon">
+      <h2>Insights</h2>
+      <p>Which series sell, which dealers convert, and where leads go cold
+         &mdash; across the whole network.</p>
+      <footer><span class="dot"></span> Planned</footer>
+    </div>
+
+  </main>
+
+  <div class="foot">
+    <span>Evotti Apps &mdash; internal platform preview</span>
+    <span>Elkhart, Indiana</span>
+  </div>
+
+</div>
+</body>
+</html>
