@@ -1,5 +1,12 @@
-# Headers only — build command and publish directory stay under the
-# Netlify dashboard's control, so nothing here can break the deploy.
+# Build command and publish directory stay under the Netlify dashboard's
+# control, so nothing here can break the deploy.
+
+# Serverless functions live in netlify/functions. esbuild bundles each
+# function and follows its require()s, so the shared sales/query.js is
+# pulled in automatically — no separate build step.
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
 
 # Keep this project out of search results. Sent on every response,
 # including images and other assets that a <meta> tag cannot cover.

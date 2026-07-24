@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evotti Sales Analysis</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23a83435'/><text x='16' y='24' font-family='Segoe UI,Helvetica,Arial,sans-serif' font-size='21' font-weight='700' fill='%23ffffff' text-anchor='middle'>E</text></svg>">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <a class="lockup" href="../" title="Back to Evotti Apps">
+    <img src="../assets/evotti-logo-black.png" alt="Evotti">
+    <span class="rule"></span>
+    <span class="sub">Sales</span>
+  </a>
+
+  <nav class="nav">
+    <a href="#" class="active">Dashboard</a>
+  </nav>
+
+  <div class="topbar-right">
+    <span class="asof" id="asof">&nbsp;</span>
+  </div>
+</header>
+
+<main class="view" id="view">
+
+  <div class="page-head">
+    <h1>Sales Analysis</h1>
+    <span class="sub" id="range">&nbsp;</span>
+  </div>
+
+  <!-- Ask panel: the natural-language agent -->
+  <section class="card agent">
+    <div class="card-head">
+      <h2><span class="spark"></span> Ask the numbers</h2>
+      <span class="spacer"></span>
+    </div>
+    <p class="cap">Ask in plain English — "how did the Southeast do against plan in June?",
+       "units by product line", "which region is behind plan?"</p>
+    <div class="ask-row">
+      <input id="ask" type="text" autocomplete="off"
+             placeholder="Ask about sales, plan, variance, a region, a product line…">
+      <button class="btn primary" id="ask-go">Ask</button>
+    </div>
+    <div class="suggests" id="suggests"></div>
+    <div id="answer"></div>
+  </section>
+
+  <!-- KPI row -->
+  <section class="kpis" id="kpis"></section>
+
+  <!-- Trend -->
+  <section class="card">
+    <div class="card-head"><h2>Daily revenue — actual vs plan</h2></div>
+    <p class="cap" id="trend-cap">&nbsp;</p>
+    <div id="trend"></div>
+    <div class="legend">
+      <span><i style="border-color:#a83435"></i>Actual</span>
+      <span><i style="border-color:#c3c7cf;border-top-style:dashed"></i>Plan</span>
+    </div>
+  </section>
+
+  <!-- Breakdowns -->
+  <div class="grid-2">
+    <section class="card">
+      <div class="card-head"><h2>By region</h2></div>
+      <p class="cap">Revenue, actual vs plan · full window</p>
+      <div id="by-region"></div>
+      <div class="legend">
+        <span><i class="bar" style="background:#a83435"></i>Actual</span>
+        <span><i class="bar" style="background:#c3c7cf"></i>Plan</span>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-head"><h2>By product line</h2></div>
+      <p class="cap">Revenue, actual vs plan · full window</p>
+      <div id="by-line"></div>
+      <div class="legend">
+        <span><i class="bar" style="background:#a83435"></i>Actual</span>
+        <span><i class="bar" style="background:#c3c7cf"></i>Plan</span>
+      </div>
+    </section>
+  </div>
+
+  <!-- Monthly rollup -->
+  <section class="card">
+    <div class="card-head">
+      <h2>Monthly performance</h2>
+      <span class="spacer"></span>
+      <button class="btn sm" id="export">Export CSV</button>
+    </div>
+    <p class="cap">Actual vs plan by month. The current month is month-to-date.</p>
+    <div class="tbl-wrap"><table class="tbl" id="month-table"></table></div>
+  </section>
+
+</main>
+
+<script src="data.js"></script>
+<script src="query.js"></script>
+<script src="charts.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
