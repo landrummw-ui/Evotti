@@ -60,10 +60,18 @@
 
     <div id="answer"></div>
 
+    <div class="filters" id="filters"></div>
+
     <section class="kpis" id="kpis"></section>
 
     <section class="card">
-      <div class="card-head"><h2>Daily revenue — actual vs plan</h2></div>
+      <div class="card-head">
+        <h2>Daily revenue — actual vs plan</h2>
+        <span class="spacer"></span>
+        <button class="iconbtn" data-max="trend" title="Expand" aria-label="Expand">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>
+        </button>
+      </div>
       <p class="cap" id="trend-cap">&nbsp;</p>
       <div id="trend"></div>
       <div class="legend">
@@ -74,7 +82,13 @@
 
     <div class="grid-2">
       <section class="card">
-        <div class="card-head"><h2>By region</h2></div>
+        <div class="card-head">
+          <h2>By region</h2>
+          <span class="spacer"></span>
+          <button class="iconbtn" data-max="region" title="Expand" aria-label="Expand">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>
+          </button>
+        </div>
         <p class="cap">Revenue, actual vs plan · full window</p>
         <div id="by-region"></div>
         <div class="legend">
@@ -83,7 +97,13 @@
         </div>
       </section>
       <section class="card">
-        <div class="card-head"><h2>By product line</h2></div>
+        <div class="card-head">
+          <h2>By product line</h2>
+          <span class="spacer"></span>
+          <button class="iconbtn" data-max="line" title="Expand" aria-label="Expand">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>
+          </button>
+        </div>
         <p class="cap">Revenue, actual vs plan · full window</p>
         <div id="by-line"></div>
         <div class="legend">
@@ -104,6 +124,18 @@
     </section>
 
   </main>
+</div>
+
+<!-- Expand / maximize -->
+<div class="modal-backdrop" id="modal" hidden>
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="modal-title"></h2>
+      <span class="spacer"></span>
+      <button class="btn sm" id="modal-close">Close</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
 </div>
 
 <script src="data.js"></script>

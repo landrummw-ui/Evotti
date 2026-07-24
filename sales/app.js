@@ -2,10 +2,11 @@
 // Evotti Sales Analysis — app
 // =============================================================================
 // Loads the bundled data (window.EVOTTI_SALES), renders the dashboard, and
-// drives the natural-language agent: a free-text box plus a guided drill-down
-// (a starter question reveals follow-up options, which reveal the next set).
-// All aggregation goes through SalesQuery, so the dashboard and the agent
-// compute variance identically.
+// drives the natural-language agent (free-text plus a guided drill-down).
+//
+// Filter pills (region / product line) re-slice the whole dashboard; each
+// chart tile can be maximized into a larger view with a data table. All
+// aggregation goes through SalesQuery, so everything stays consistent.
 // =============================================================================
 
 (function () {
@@ -26,22 +27,72 @@
   var $ = function (id) { return document.getElementById(id); };
   var color = { crimson: "#a83435", plan: "#47505f" };
 
+  // Dashboard filter state (single-select per dimension; "" = all).
+  var FILTER = { region: "", line: "" };
+
   function init() {
     $("asof").textContent = "As of " + prettyDate(AS_OF);
     $("range").textContent = "Feb – Jul 2026 · workdays only";
+    renderFilters();
+    renderDashboard();
+    wireAgent();
+    wireMaximize();
+  }
+
+  // Merge the active filter pills into a query filter object.
+  function filt(extra) {
+    var f = {};
+    if (FILTER.region) f.regions = [FILTER.region];
+    if (FILTER.line) f.product_lines = [FILTER.line];
+    if (extra) for (var k in extra) f[k] = extra[k];
+    return f;
+  }
+
+  function renderDashboard() {
     renderKpis();
     renderTrend();
     renderBreakdown("by-region", "region");
     renderBreakdown("by-line", "product_line");
     renderMonthTable();
-    wireAgent();
+  }
+
+  // ---- filter pills --------------------------------------------------------
+
+  function renderFilters() {
+    $("filters").innerHTML =
+      '<div class="fgroup"><span class="flabel">Region</span>' + pillSet("region", SQ.REGIONS) + "</div>" +
+      '<div class="fgroup"><span class="flabel">Product line</span>' + pillSet("line", SQ.LINES) + "</div>";
+    Array.prototype.forEach.call(document.querySelectorAll(".fpill"), function (el) {
+      el.onclick = function () {
+        var dim = el.getAttribute("data-dim"), val = el.getAttribute("data-val");
+        FILTER[dim] = FILTER[dim] === val ? "" : val;
+        markActive();
+        renderDashboard();
+      };
+    });
+    markActive();
+  }
+
+  function pillSet(dim, vals) {
+    var s = '<button class="fpill" data-dim="' + dim + '" data-val="">All</button>';
+    vals.forEach(function (v) {
+      s += '<button class="fpill" data-dim="' + dim + '" data-val="' + esc(v) + '">' + esc(v) + "</button>";
+    });
+    return s;
+  }
+
+  function markActive() {
+    Array.prototype.forEach.call(document.querySelectorAll(".fpill"), function (el) {
+      el.classList.toggle("active",
+        (FILTER[el.getAttribute("data-dim")] || "") === el.getAttribute("data-val"));
+    });
   }
 
   // ---- KPIs ----------------------------------------------------------------
 
   function renderKpis() {
-    var mtd = SQ.totals(ROWS, { filters: { months: [CUR_MONTH] } });
-    var all = SQ.totals(ROWS, { filters: {} });
+    var mtd = SQ.totals(ROWS, { filters: filt({ months: [CUR_MONTH] }) });
+    var all = SQ.totals(ROWS, { filters: filt() });
 
     var total = SQ.workdaysInMonth(CUR_MONTH);
     var elapsed = distinctDates(ROWS, CUR_MONTH);
@@ -75,32 +126,46 @@
 
   // ---- charts --------------------------------------------------------------
 
-  function renderTrend() {
-    var b = SQ.aggregate(ROWS, { group_by: "day" });
+  function trendChart(height) {
+    var b = SQ.aggregate(ROWS, { group_by: "day", filters: filt() });
     var cats = b.map(function (x) { return x.label; });
-    var svg = SC.lineChart(cats, [
-      { values: b.map(function (x) { return x.revActual; }), color: color.crimson },
-      { values: b.map(function (x) { return x.revForecast; }), color: color.plan, dashed: true }
-    ], { fmt: SQ.money, height: 300 });
-    slot("trend", svg);
-    $("trend-cap").textContent = "Company-wide, " + cats[0] + " – " + cats[cats.length - 1];
+    return {
+      buckets: b,
+      svg: SC.lineChart(cats, [
+        { values: b.map(function (x) { return x.revActual; }), color: color.crimson },
+        { values: b.map(function (x) { return x.revForecast; }), color: color.plan, dashed: true }
+      ], { fmt: SQ.money, height: height })
+    };
+  }
+
+  function breakdownChart(groupBy, height) {
+    var b = SQ.aggregate(ROWS, { group_by: groupBy, filters: filt() });
+    var cats = b.map(function (x) { return x.label; });
+    return {
+      buckets: b,
+      svg: SC.groupedBars(cats, [
+        { values: b.map(function (x) { return x.revActual; }), color: color.crimson },
+        { values: b.map(function (x) { return x.revForecast; }), color: color.plan }
+      ], { fmt: SQ.money, height: height })
+    };
+  }
+
+  function renderTrend() {
+    var t = trendChart(300);
+    slot("trend", t.svg);
+    $("trend-cap").textContent =
+      "Company-wide, " + t.buckets[0].label + " – " + t.buckets[t.buckets.length - 1].label;
   }
 
   function renderBreakdown(elId, groupBy) {
-    var b = SQ.aggregate(ROWS, { group_by: groupBy });
-    var cats = b.map(function (x) { return x.label; });
-    var svg = SC.groupedBars(cats, [
-      { values: b.map(function (x) { return x.revActual; }), color: color.crimson },
-      { values: b.map(function (x) { return x.revForecast; }), color: color.plan }
-    ], { fmt: SQ.money, height: 280 });
-    slot(elId, svg);
+    slot(elId, breakdownChart(groupBy, 280).svg);
   }
 
   // ---- monthly table -------------------------------------------------------
 
   function renderMonthTable() {
-    var b = SQ.aggregate(ROWS, { group_by: "month" });
-    var t = SQ.totals(ROWS, { filters: {} });
+    var b = SQ.aggregate(ROWS, { group_by: "month", filters: filt() });
+    var t = SQ.totals(ROWS, { filters: filt() });
     var head = "<thead><tr>" +
       th("Month") + th("Units") + th("Plan") + th("Revenue") + th("Plan") +
       th("Var $") + th("Var %") + "</tr></thead>";
@@ -132,8 +197,12 @@
   function exportCsv() {
     var cols = ["sale_date", "region", "product_line", "units_actual",
       "units_forecast", "revenue_actual", "revenue_forecast"];
+    var rows = ROWS.filter(function (r) {
+      return (!FILTER.region || r.region === FILTER.region) &&
+        (!FILTER.line || r.product_line === FILTER.line);
+    });
     var lines = [cols.join(",")];
-    ROWS.forEach(function (r) {
+    rows.forEach(function (r) {
       lines.push(cols.map(function (c) {
         var v = r[c];
         return typeof v === "string" ? '"' + v + '"' : v;
@@ -147,10 +216,67 @@
     URL.revokeObjectURL(a.href);
   }
 
+  // ---- maximize / expand modal --------------------------------------------
+
+  var MAX_TITLES = {
+    trend: "Daily revenue — actual vs plan",
+    region: "Revenue by region",
+    line: "Revenue by product line"
+  };
+
+  function wireMaximize() {
+    Array.prototype.forEach.call(document.querySelectorAll("[data-max]"), function (el) {
+      el.onclick = function () { openModal(el.getAttribute("data-max")); };
+    });
+    $("modal-close").onclick = closeModal;
+    $("modal").onclick = function (e) { if (e.target === $("modal")) closeModal(); };
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeModal();
+    });
+  }
+
+  function openModal(kind) {
+    var scope = FILTER.region || FILTER.line
+      ? " · " + [FILTER.region, FILTER.line].filter(Boolean).join(" / ") : "";
+    $("modal-title").textContent = MAX_TITLES[kind] + scope;
+    var body = $("modal-body");
+    body.innerHTML = "";
+
+    var chart = kind === "trend" ? trendChart(440)
+      : breakdownChart(kind === "region" ? "region" : "product_line", 440);
+    body.appendChild(chart.svg);
+    body.insertAdjacentHTML("beforeend", legendHtml("Actual", "Plan"));
+
+    // Table: monthly rollup for the daily trend, else the grouped buckets.
+    var tblBuckets = kind === "trend"
+      ? SQ.aggregate(ROWS, { group_by: "month", filters: filt() }) : chart.buckets;
+    var colName = kind === "trend" ? "Month" : (kind === "region" ? "Region" : "Product line");
+    body.insertAdjacentHTML("beforeend", bucketTable(tblBuckets, colName));
+
+    $("modal").hidden = false;
+  }
+
+  function closeModal() { $("modal").hidden = true; }
+
+  function bucketTable(b, colName) {
+    var head = "<thead><tr>" + th(colName) + th("Units") + th("Revenue") +
+      th("Plan") + th("Var %") + "</tr></thead>";
+    var rows = b.map(function (r) {
+      return "<tr>" + td(r.label, true) + td(SQ.num(r.unitsActual)) +
+        td(SQ.moneyFull(r.revActual)) + td(SQ.moneyFull(r.revForecast)) +
+        tdV(r.revVariancePct, SQ.pct(r.revVariancePct)) + "</tr>";
+    }).join("");
+    return '<div class="tbl-wrap" style="margin-top:20px"><table class="tbl">' +
+      head + "<tbody>" + rows + "</tbody></table></div>";
+  }
+
+  function legendHtml(a, b) {
+    return '<div class="legend">' +
+      '<span><i class="bar" style="background:#a83435"></i>' + a + "</span>" +
+      '<span><i class="bar" style="background:#47505f"></i>' + b + "</span></div>";
+  }
+
   // ---- guided question tree ------------------------------------------------
-  // Each node has a plain-English question the agent answers, plus the set of
-  // follow-ups to surface next. Follow-ups loop back to sibling explorations,
-  // so the drill-down never dead-ends.
 
   var TREE = {
     start: ["plan", "where", "trend", "mtd"],
@@ -250,19 +376,12 @@
     if (svg) {
       var s = wrap.querySelector(".chart-slot");
       s.appendChild(svg);
-      s.insertAdjacentHTML("beforeend", answerLegend(spec));
+      var isVar = spec.view === "variance" || spec.view === "variance_pct";
+      s.insertAdjacentHTML("beforeend",
+        legendHtml(isVar ? "Over plan" : "Actual", isVar ? "Under plan" : "Plan"));
     }
     $("answer").innerHTML = "";
     $("answer").appendChild(wrap);
-  }
-
-  function answerLegend(spec) {
-    var isVar = spec.view === "variance" || spec.view === "variance_pct";
-    var a = isVar ? "Over plan" : "Actual";
-    var b = isVar ? "Under plan" : "Plan";
-    return '<div class="legend">' +
-      '<span><i class="bar" style="background:#a83435"></i>' + a + "</span>" +
-      '<span><i class="bar" style="background:#47505f"></i>' + b + "</span></div>";
   }
 
   function resultChart(spec, result) {
