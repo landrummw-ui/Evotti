@@ -67,6 +67,18 @@
 .cards.dragover { outline: 2px dashed var(--accent-deep); outline-offset: -3px; border-radius: 9px; background: rgba(168,52,53,0.03); }
 .empty-col { color: var(--faint); font-size: 12px; text-align: center; padding: 14px 0; }
 
+.board-notice {
+  margin: 8px 32px; max-width: 620px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 12px; padding: 24px 26px;
+}
+.board-notice h2 { margin: 0 0 10px; font-size: 17px; font-weight: 650; }
+.board-notice p { margin: 0 0 10px; color: var(--muted); font-size: 14px; line-height: 1.55; }
+.board-notice p:last-child { margin-bottom: 0; }
+.board-notice code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px;
+  background: var(--surface-hi); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px;
+}
+
 /* ------------------------------------------------------------------- card -- */
 
 .kcard {

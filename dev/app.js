@@ -7,9 +7,10 @@
 // from when it entered the current stage, and the card is colored green / pale
 // yellow / red accordingly. On-Hold and Rejected are supported.
 //
-// State persists in localStorage for now (zero backend). The data model mirrors
-// what a `dev_cards` table will hold when UAC/Supabase is wired up — swapping
-// load()/save() for Supabase calls is all it takes.
+// State is shared in Supabase (table `dev_cards`) so everyone sees the same
+// board. Reads/writes use the publishable key in /platform/config.js. The board
+// polls every few seconds so a change one person makes shows up for the others.
+// Run supabase/dev_schema.sql once to create + seed the table.
 // =============================================================================
 
 (function () {
@@ -29,13 +30,17 @@
   ];
   var REJECTED = "rejected";
   var STAGE = {}; STAGES.forEach(function (s) { STAGE[s.key] = s; });
-  var STORE = "evotti_dev_board_v1";
   var CURRENT_USER = "Mark Landrum";
+  var POLL_MS = 6000;          // refresh cadence for the shared board
+  var WRITE_QUIET_MS = 4000;   // skip a poll this long after a local write
 
   var state = { cards: {}, order: {} };
   var filter = { q: "", type: "all" };
   var showRejected = false;
   var dragId = null;
+  var sb = null;               // Supabase client
+  var lastWrite = 0;
+  var ready = false;
 
   var $ = function (id) { return document.getElementById(id); };
 
@@ -92,67 +97,8 @@
     return { status: "green", due: due, label: "on track" };
   }
 
-  // ---- persistence ---------------------------------------------------------
-  function load() {
-    try {
-      var raw = localStorage.getItem(STORE);
-      if (raw) { state = JSON.parse(raw); return true; }
-    } catch (e) {}
-    return false;
-  }
-  function save() {
-    try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
-  }
-
   function genId() {
     return "C" + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36);
-  }
-
-  // ---- seed demo data ------------------------------------------------------
-  function seed() {
-    state = { cards: {}, order: {} };
-    STAGES.forEach(function (s) { state.order[s.key] = []; });
-    state.order[REJECTED] = [];
-
-    var demo = [
-      ["agent", "Warranty Claim Triage Agent", "requests", 1, "As a service manager, I want incoming warranty claims auto-classified and routed to the right dealer so that resolution starts within a day.", "Dana Reyes", ""],
-      ["app",   "Customer Sentiment Dashboard", "requests", 4, "As Leadership, I want sentiment across dealer and buyer feedback in one view so that we spot issues early.", "Mark Landrum", ""],
-      ["app",   "Build Delay Predictor", "requirements", 4, "As operations, I want a model that flags hulls likely to slip their ship date so that we can intervene.", "Chen Okafor", "Priya Nair"],
-      ["agent", "Dealer Quote Assistant", "ready_dev", 0, "As a dealer, I want an assistant that drafts a configured quote from a few inputs so that turnaround is faster.", "Dana Reyes", "Sam Cole"],
-      ["app",   "Lead Scoring Model", "in_dev", 13, "As Sales, I want Boat Builder leads scored by likelihood to close so that dealers work the best ones first.", "Dana Reyes", "Priya Nair"],
-      ["agent", "Sales Forecast Copilot", "in_dev", 2, "As the Controller, I want to ask forecast questions in plain English so that I can analyze without waiting on a report.", "Chen Okafor", "Sam Cole"],
-      ["app",   "Spec Sheet Generator", "qa", 3, "As marketing, I want spec sheets generated from the options catalog so that they're always current.", "Priya Nair", "Sam Cole"],
-      ["agent", "Onboarding Chatbot", "uat", 4, "As a new dealer, I want a chatbot that answers setup questions so that onboarding is self-serve.", "Mark Landrum", "Priya Nair", true],
-      ["app",   "Options Pricing Optimizer", "ready_deploy", 1, "As finance, I want price recommendations per configuration so that margin stays consistent.", "Chen Okafor", "Sam Cole"],
-      ["agent", "Inventory Reorder Agent", "golive", 6, "As operations, I want long-lead parts reordered automatically at threshold so that builds aren't blocked.", "Chen Okafor", "Priya Nair"]
-    ];
-    demo.forEach(function (r) {
-      var enteredAt = subBusinessDays(new Date(), r[3]).toISOString();
-      var id = genId();
-      state.cards[id] = card({
-        id: id, type: r[0], title: r[1], stage: r[2], user_story: r[4],
-        requester: r[5], owner: r[6], on_hold: r[7] || false,
-        request_date: subBusinessDays(new Date(), r[3] + 2).toISOString().slice(0, 10),
-        stage_entered_at: enteredAt,
-        history: [{ stage: r[2], at: enteredAt }]
-      });
-      state.order[r[2]].push(id);
-    });
-
-    // one rejected example
-    var rid = genId();
-    state.cards[rid] = card({
-      id: rid, type: "app", title: "AR Auto-Dunning Bot", stage: REJECTED,
-      user_story: "As finance, I want overdue invoices chased automatically.",
-      requester: "Chen Okafor", owner: "", rejected: true,
-      rejection_reason: "Out of scope for this year — revisit after the CRM rollout.",
-      request_date: subBusinessDays(new Date(), 20).toISOString().slice(0, 10),
-      stage_entered_at: subBusinessDays(new Date(), 8).toISOString(),
-      history: [{ stage: "requests", at: subBusinessDays(new Date(), 20).toISOString() },
-                { stage: REJECTED, at: subBusinessDays(new Date(), 8).toISOString() }]
-    });
-    state.order[REJECTED].push(rid);
-    save();
   }
 
   // Normalize a card with all model fields.
@@ -168,6 +114,119 @@
       tags: c.tags || [], comments: c.comments || [], attachments: c.attachments || [],
       history: c.history || [{ stage: c.stage || "requests", at: nowISO() }]
     };
+  }
+
+  // ---- Supabase persistence ------------------------------------------------
+  // The order arrays are the source of truth for position; a card's `position`
+  // column is just its index within its column, reindexed whenever the column
+  // changes. Writes are optimistic: we render immediately, then upsert.
+
+  function indexIn(stage, id) {
+    var a = state.order[stage] || [];
+    var i = a.indexOf(id);
+    return i < 0 ? 0 : i;
+  }
+
+  function toRow(c) {
+    return {
+      id: c.id, type: c.type, title: c.title,
+      user_story: c.user_story || "", description: c.description || "",
+      requester: c.requester || "", owner: c.owner || "",
+      request_date: c.request_date ? String(c.request_date).slice(0, 10) : null,
+      completion_date: c.completion_date ? String(c.completion_date).slice(0, 10) : null,
+      stage: c.stage, stage_entered_at: c.stage_entered_at,
+      on_hold: !!c.on_hold, rejected: !!c.rejected, rejection_reason: c.rejection_reason || "",
+      tags: c.tags || [], comments: c.comments || [], attachments: c.attachments || [],
+      history: c.history || [], position: indexIn(c.stage, c.id),
+      updated_at: nowISO()
+    };
+  }
+
+  function fromRow(r) {
+    return card({
+      id: r.id, type: r.type, title: r.title, user_story: r.user_story,
+      description: r.description, requester: r.requester, owner: r.owner,
+      request_date: r.request_date ? String(r.request_date).slice(0, 10) : "",
+      completion_date: r.completion_date ? String(r.completion_date).slice(0, 10) : "",
+      stage: r.stage, stage_entered_at: r.stage_entered_at,
+      on_hold: r.on_hold, rejected: r.rejected, rejection_reason: r.rejection_reason,
+      tags: r.tags, comments: r.comments, attachments: r.attachments, history: r.history
+    });
+  }
+
+  function isMissingTable(err) {
+    if (!err) return false;
+    var code = err.code || "";
+    return code === "42P01" || code === "PGRST205" ||
+      /could not find the table|relation .*does not exist/i.test(err.message || "");
+  }
+
+  function noteWrite() { lastWrite = Date.now(); }
+  function onWriteErr(res) {
+    if (res && res.error) {
+      // eslint-disable-next-line no-console
+      console.error("[dev board] save failed:", res.error.message || res.error);
+    }
+  }
+
+  // Upsert a single card (field-only changes).
+  function saveCard(id) {
+    var c = state.cards[id]; if (!c || !sb) return;
+    noteWrite();
+    sb.from("dev_cards").upsert(toRow(c)).then(onWriteErr);
+  }
+  // Reindex + upsert every card in the given columns (structural changes).
+  function saveColumns() {
+    if (!sb) return;
+    var stages = Array.prototype.slice.call(arguments);
+    var rows = [];
+    stages.forEach(function (stage) {
+      (state.order[stage] || []).forEach(function (id) {
+        if (state.cards[id]) rows.push(toRow(state.cards[id]));
+      });
+    });
+    if (!rows.length) return;
+    noteWrite();
+    sb.from("dev_cards").upsert(rows).then(onWriteErr);
+  }
+
+  async function loadFromDB() {
+    if (!sb) return false;
+    var res = await sb.from("dev_cards").select("*").order("position", { ascending: true });
+    if (res.error) {
+      if (isMissingTable(res.error)) showSetupNotice();
+      else showErrorNotice(res.error.message || "Could not load the board.");
+      return false;
+    }
+    var st = { cards: {}, order: {} };
+    STAGES.forEach(function (s) { st.order[s.key] = []; });
+    st.order[REJECTED] = [];
+    (res.data || []).forEach(function (r) {
+      var c = fromRow(r);
+      st.cards[c.id] = c;
+      (st.order[c.stage] || (st.order[c.stage] = [])).push(c.id);
+    });
+    state = st;
+    ready = true;
+    return true;
+  }
+
+  function showSetupNotice() {
+    $("board").innerHTML =
+      '<div class="board-notice">' +
+      "<h2>One-time setup needed</h2>" +
+      "<p>The shared board table isn't in Supabase yet. In the Supabase SQL Editor " +
+      "(same project as the CRM), run <code>supabase/dev_schema.sql</code> once. " +
+      "It creates the <code>dev_cards</code> table and loads the demo cards.</p>" +
+      "<p>Reload this page after running it and the board goes live for everyone.</p>" +
+      "</div>";
+    $("summary").textContent = "Waiting on Supabase setup";
+  }
+  function showErrorNotice(msg) {
+    $("board").innerHTML =
+      '<div class="board-notice"><h2>Couldn\'t reach the board</h2><p>' + esc(msg) + "</p>" +
+      "<p>Check your connection and reload.</p></div>";
+    $("summary").textContent = "Offline";
   }
 
   // ---- order helpers -------------------------------------------------------
@@ -190,10 +249,11 @@
       c.stage_entered_at = nowISO();
       c.history.push({ stage: stage, at: c.stage_entered_at });
       c.rejected = (stage === REJECTED);            // moving in/out of Rejected keeps the flag honest
-      if (stage !== REJECTED) c.rejection_reason = c.rejection_reason && false ? "" : c.rejection_reason;
     }
     insertInto(stage, id, beforeId);
-    save(); render();
+    render();
+    if (from !== stage) saveColumns(from, stage);
+    else saveColumns(stage);
   }
 
   // ---- rendering -----------------------------------------------------------
@@ -208,6 +268,7 @@
   }
 
   function render() {
+    if (!ready) return;
     renderControls();
     var cols = STAGES.slice();
     if (showRejected) cols.push({ key: REJECTED, label: "Rejected", sla: null });
@@ -286,7 +347,7 @@
       b.addEventListener("click", function (e) {
         e.stopPropagation();
         var id = b.getAttribute("data-id"), act = b.getAttribute("data-act");
-        if (act === "hold") { state.cards[id].on_hold = !state.cards[id].on_hold; save(); render(); }
+        if (act === "hold") { state.cards[id].on_hold = !state.cards[id].on_hold; render(); saveCard(id); }
         else if (act === "reject") openReject(id);
         else if (act === "restore") restore(id);
       });
@@ -329,12 +390,14 @@
     $("rej-go").onclick = function () {
       var reason = $("rej-reason").value.trim();
       if (!reason) { $("rej-reason").focus(); return; }
-      removeFrom(c.stage, id);
+      var from = c.stage;
+      removeFrom(from, id);
       c.stage = REJECTED; c.rejected = true; c.rejection_reason = reason;
       c.stage_entered_at = nowISO(); c.history.push({ stage: REJECTED, at: c.stage_entered_at });
       state.order[REJECTED].unshift(id);
       showRejected = true; $("show-rejected").checked = true;
-      save(); close("modal-reject"); render();
+      close("modal-reject"); render();
+      saveColumns(from, REJECTED);
     };
   }
 
@@ -344,7 +407,8 @@
     c.stage = "requests"; c.rejected = false; c.rejection_reason = "";
     c.stage_entered_at = nowISO(); c.history.push({ stage: "requests", at: c.stage_entered_at });
     state.order.requests.unshift(id);
-    save(); render();
+    render();
+    saveColumns(REJECTED, "requests");
   }
 
   // ---- new request ---------------------------------------------------------
@@ -386,7 +450,8 @@
       stage: "requests", stage_entered_at: nowISO()
     });
     state.order.requests.unshift(id);
-    save(); close("modal-new"); render();
+    close("modal-new"); render();
+    saveColumns("requests");
   }
 
   // ---- detail panel --------------------------------------------------------
@@ -455,7 +520,7 @@
 
     open("modal-detail");
     $("d-close").onclick = function () { close("modal-detail"); };
-    $("d-hold").onclick = function () { c.on_hold = !c.on_hold; save(); close("modal-detail"); render(); };
+    $("d-hold").onclick = function () { c.on_hold = !c.on_hold; close("modal-detail"); render(); saveCard(id); };
     if ($("d-reject")) $("d-reject").onclick = function () { close("modal-detail"); openReject(id); };
     if ($("d-restore")) $("d-restore").onclick = function () { restore(id); close("modal-detail"); };
     $("d-save").onclick = function () {
@@ -464,20 +529,20 @@
       c.owner = $("d-owner").value.trim(); c.request_date = $("d-reqdate").value;
       c.completion_date = $("d-golive").value; c.description = $("d-desc").value;
       c.tags = $("d-tags").value.split(",").map(function (t) { return t.trim(); }).filter(Boolean);
-      save(); close("modal-detail"); render();
+      close("modal-detail"); render(); saveCard(id);
     };
     $("att-add").onclick = function () {
       var n = $("att-name").value.trim(); if (!n) return;
       c.attachments.push({ name: n, url: $("att-url").value.trim() });
-      save(); openDetail(id);
+      saveCard(id); openDetail(id);
     };
     Array.prototype.forEach.call(document.querySelectorAll("[data-rmatt]"), function (b) {
-      b.onclick = function () { c.attachments.splice(+b.getAttribute("data-rmatt"), 1); save(); openDetail(id); };
+      b.onclick = function () { c.attachments.splice(+b.getAttribute("data-rmatt"), 1); saveCard(id); openDetail(id); };
     });
     $("cmt-add").onclick = function () {
       var t = $("cmt").value.trim(); if (!t) return;
       c.comments.push({ author: CURRENT_USER, at: nowISO(), text: t });
-      save(); openDetail(id);
+      saveCard(id); openDetail(id);
     };
   }
 
@@ -487,6 +552,11 @@
   function backdropClose(id) {
     $(id).addEventListener("click", function (e) { if (e.target === $(id)) close(id); });
   }
+  function anyModalOpen() {
+    return ["modal-detail", "modal-new", "modal-reject"].some(function (id) {
+      return $(id) && !$(id).hidden;
+    });
+  }
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
@@ -494,13 +564,17 @@
     });
   }
 
-  // ---- init ----------------------------------------------------------------
-  function init() {
-    if (!load() || !state.cards || !Object.keys(state.cards).length) seed();
-    // make sure order arrays exist for every stage
-    STAGES.forEach(function (s) { if (!state.order[s.key]) state.order[s.key] = []; });
-    if (!state.order[REJECTED]) state.order[REJECTED] = [];
+  // ---- polling: keep everyone's board in sync ------------------------------
+  function startPolling() {
+    setInterval(function () {
+      if (dragId || anyModalOpen()) return;                 // don't yank the UI mid-interaction
+      if (Date.now() - lastWrite < WRITE_QUIET_MS) return;  // let our own write settle first
+      loadFromDB().then(function (ok) { if (ok) render(); });
+    }, POLL_MS);
+  }
 
+  // ---- init ----------------------------------------------------------------
+  async function init() {
     $("new").onclick = openNew;
     $("search").addEventListener("input", function () { filter.q = this.value; render(); });
     $("show-rejected").addEventListener("change", function () { showRejected = this.checked; render(); });
@@ -508,7 +582,18 @@
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape") ["modal-detail", "modal-new", "modal-reject"].forEach(close);
     });
+
+    var cfg = window.EVOTTI_CONFIG;
+    if (!window.supabase || !cfg || !cfg.supabaseUrl || !cfg.supabaseKey) {
+      showErrorNotice("Supabase client didn't load. Check /platform/config.js and the supabase-js script tag.");
+      return;
+    }
+    sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey);
+
+    var ok = await loadFromDB();
+    if (!ok) return;   // setup / error notice already shown
     render();
+    startPolling();
   }
 
   init();
