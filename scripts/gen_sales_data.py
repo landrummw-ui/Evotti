@@ -1,0 +1,187 @@
+#!/usr/bin/env python3
+"""
+Generate mock daily sales data for the Evotti sales-analysis demo.
+
+Grain: one row per (workday x region x product line).
+Window: ~6 months of workdays (weekends excluded), ending on the run date.
+Each row carries actual and forecast (plan) for both units and revenue, so
+variance is always computable at any level of aggregation.
+
+Story: "realistic mixed" -- a spring build-season peak, some months beating
+plan and some missing it (a soft May, recovering into summer), so the analysis
+and the agent have real variances to surface.
+
+Outputs:
+  supabase/sales_seed.sql   -- INSERTs for the sales_daily table
+  sales/sample-data.json    -- same rows as JSON, for offline preview/fallback
+
+Deterministic: fixed RNG seed, so re-running reproduces the same data.
+"""
+
+import json
+import math
+import os
+import random
+from datetime import date, timedelta
+
+# ----------------------------------------------------------------- config ----
+
+SEED = 20260724
+# Start on a month boundary so there's no noisy partial leading month; this
+# gives five complete months (Feb-Jun) plus the in-progress current month (Jul
+# MTD through the 24th), which is exactly how a CFO reads a pacing report.
+START = date(2026, 2, 2)
+END = date(2026, 7, 24)  # inclusive; matches the demo "today"
+
+# Region -> demand weight (Elkhart's home water leads), price factor (freight /
+# coastal premium nudges a few regions up a hair).
+REGIONS = {
+    "Great Lakes": (1.25, 1.00),
+    "Southeast":   (1.10, 1.00),
+    "Gulf":        (0.95, 0.99),
+    "Northeast":   (0.85, 1.03),
+    "West":        (0.85, 1.04),
+}
+
+# Product line -> demand weight, average selling price ($).
+LINES = {
+    "190 Sport":    (1.00,  72000),
+    "240 Series":   (0.95,  98000),
+    "280 Cruiser":  (0.55, 135000),
+    "320 Flagship": (0.28, 210000),
+}
+
+# Overall scale: tuned so shoulder-season runs ~6 boats/workday company-wide and
+# the spring peak reaches ~11.
+DAILY_BASE = 0.575
+
+# Month -> actual-vs-plan bias. This is the narrative spine.
+MONTH_BIAS = {
+    2: 0.93,   # Feb: winter, a bit under plan
+    3: 1.00,   # Mar: spring ramp, roughly on plan
+    4: 1.10,   # Apr: peak season, strongest beat
+    5: 0.94,   # May: supply hiccup, misses
+    6: 1.05,   # Jun: rebound, back over plan
+    7: 1.06,   # Jul MTD: pacing ahead
+}
+
+# Expected options/trim revenue baked into the plan, so revenue variance tracks
+# unit variance instead of carrying a constant upward drift.
+PLAN_UPLIFT = 0.03
+
+
+def seasonal(d: date) -> float:
+    """Bell curve peaking in late April (build/boat-show season)."""
+    doy = d.timetuple().tm_yday
+    return 0.70 + 0.70 * math.exp(-(((doy - 115) / 55.0) ** 2))
+
+
+def workdays(start: date, end: date):
+    d = start
+    while d <= end:
+        if d.weekday() < 5:  # Mon..Fri
+            yield d
+        d += timedelta(days=1)
+
+
+def main():
+    rng = random.Random(SEED)
+    rows = []
+
+    for d in workdays(START, END):
+        s = seasonal(d)
+        bias = MONTH_BIAS[d.month]
+        for region, (rw, pf) in REGIONS.items():
+            for line, (lw, asp) in LINES.items():
+                # Forecast = the smooth plan (decimals are fine for a plan);
+                # plan revenue includes expected options uplift.
+                plan_units = DAILY_BASE * rw * lw * s
+                fc_units = round(plan_units, 2)
+                fc_rev = round(plan_units * asp * pf * (1 + PLAN_UPLIFT))
+
+                # Actual = plan demand x month bias x daily noise. Noise is
+                # centered at 1 so it doesn't drift the totals; stochastic
+                # rounding keeps whole boats per cell (lumpy day to day) while
+                # preserving the expected value, so monthly totals read the
+                # intended variance instead of Poisson wobble.
+                sigma = 0.16
+                noise = math.exp(rng.gauss(0, sigma) - sigma * sigma / 2)
+                expected = plan_units * bias * noise
+                act_units = int(expected) + (1 if rng.random() < expected - int(expected) else 0)
+                # Realized options/trim uplift varies around the plan figure.
+                uplift = max(-0.03, min(0.12, rng.gauss(PLAN_UPLIFT, 0.03)))
+                act_rev = round(act_units * asp * pf * (1 + uplift))
+
+                rows.append({
+                    "sale_date": d.isoformat(),
+                    "region": region,
+                    "product_line": line,
+                    "units_actual": act_units,
+                    "units_forecast": fc_units,
+                    "revenue_actual": act_rev,
+                    "revenue_forecast": fc_rev,
+                })
+
+    _write_sql(rows)
+    _write_json(rows)
+    _summary(rows)
+
+
+def _write_sql(rows):
+    os.makedirs("supabase", exist_ok=True)
+    path = "supabase/sales_seed.sql"
+    with open(path, "w") as f:
+        f.write("-- Evotti sales-analysis demo: mock daily sales.\n")
+        f.write("-- Generated by scripts/gen_sales_data.py (deterministic).\n")
+        f.write("-- Grain: one row per workday x region x product line.\n\n")
+        f.write("truncate table sales_daily;\n\n")
+        f.write("insert into sales_daily\n")
+        f.write("  (sale_date, region, product_line, units_actual, "
+                "units_forecast, revenue_actual, revenue_forecast)\nvalues\n")
+        vals = []
+        for r in rows:
+            vals.append(
+                "  ('{sale_date}', '{region}', '{product_line}', "
+                "{units_actual}, {units_forecast}, {revenue_actual}, "
+                "{revenue_forecast})".format(**r)
+            )
+        f.write(",\n".join(vals))
+        f.write(";\n")
+    print("wrote {} ({} rows)".format(path, len(rows)))
+
+
+def _write_json(rows):
+    os.makedirs("sales", exist_ok=True)
+    path = "sales/sample-data.json"
+    with open(path, "w") as f:
+        json.dump(rows, f, separators=(",", ":"))
+    print("wrote {} ({:.0f} KB)".format(path, os.path.getsize(path) / 1024))
+
+
+def _summary(rows):
+    months = {}
+    for r in rows:
+        m = r["sale_date"][:7]
+        a = months.setdefault(m, {"ua": 0, "ra": 0, "rf": 0.0})
+        a["ua"] += r["units_actual"]
+        a["ra"] += r["revenue_actual"]
+        a["rf"] += r["revenue_forecast"]
+    print("\n  month     units   rev_actual    rev_plan     var%")
+    print("  " + "-" * 52)
+    ta = tf = 0.0
+    for m in sorted(months):
+        a = months[m]
+        var = (a["ra"] - a["rf"]) / a["rf"] * 100 if a["rf"] else 0
+        ta += a["ra"]; tf += a["rf"]
+        print("  {:<8}  {:>4}   {:>10}   {:>10}   {:>+6.1f}".format(
+            m, a["ua"], "${:,.0f}".format(a["ra"]),
+            "${:,.0f}".format(a["rf"]), var))
+    print("  " + "-" * 52)
+    print("  {:<8}  {:>4}   {:>10}   {:>10}   {:>+6.1f}".format(
+        "TOTAL", sum(m2["ua"] for m2 in months.values()),
+        "${:,.0f}".format(ta), "${:,.0f}".format(tf),
+        (ta - tf) / tf * 100 if tf else 0))
+
+
+if __name__ == "__main__":
+    main()
