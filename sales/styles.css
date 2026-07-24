@@ -76,14 +76,28 @@ a { color: inherit; }
   border-radius: 999px; padding: 4px 12px; white-space: nowrap;
 }
 
-/* ------------------------------------------------------------------ view -- */
+/* --------------------------------------------------------------- layout -- */
 
-.view { max-width: 1180px; margin: 0 auto; padding: 30px 28px 96px; }
-
-.page-head { display: flex; align-items: flex-end; gap: 14px; margin-bottom: 22px; }
+.page-head {
+  max-width: 1240px; margin: 0 auto; padding: 30px 28px 0;
+  display: flex; align-items: flex-end; gap: 14px;
+}
 .page-head h1 { margin: 0; font-size: 26px; font-weight: 650; letter-spacing: -0.01em; }
 .page-head .sub { color: var(--faint); font-size: 14px; padding-bottom: 3px; }
 .page-head .spacer { margin-left: auto; }
+
+.layout {
+  max-width: 1240px; margin: 0 auto; padding: 22px 28px 96px;
+  display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 22px;
+  align-items: start;
+}
+.aside { position: sticky; top: 84px; }
+.main { min-width: 0; }
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .aside { position: static; }
+}
 
 /* --------------------------------------------------------------- buttons -- */
 
@@ -173,22 +187,43 @@ table.tbl tfoot td { font-weight: 700; border-top: 2px solid var(--border-hi); p
   width: 8px; height: 8px; border-radius: 50%; background: var(--accent);
   box-shadow: 0 0 0 4px rgba(168, 52, 53, 0.14);
 }
-.ask-row { display: flex; gap: 10px; margin: 4px 0 14px; }
+.ask-row { display: flex; gap: 8px; margin: 4px 0 16px; }
 .ask-row input {
-  flex: 1; font: inherit; font-size: 15px; color: var(--text);
+  flex: 1; min-width: 0; font: inherit; font-size: 14px; color: var(--text);
   background: var(--bg); border: 1px solid var(--border-hi);
-  border-radius: 10px; padding: 12px 14px;
+  border-radius: 10px; padding: 11px 13px;
 }
 .ask-row input:focus { outline: none; border-color: var(--accent); }
 
-.suggests { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
-.suggest {
-  font: inherit; font-size: 12.5px; cursor: pointer;
-  padding: 6px 12px; border-radius: 999px;
-  border: 1px solid var(--border); background: var(--surface); color: var(--muted);
-  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+/* Guided drill-down: click a question, get the next set of options. */
+.guide-head {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  font-size: 11px; letter-spacing: 0.13em; text-transform: uppercase; color: var(--faint);
 }
-.suggest:hover { border-color: var(--accent); color: var(--accent); background: rgba(168,52,53,0.05); }
+.guide-head .linkbtn { margin-left: auto; }
+.linkbtn {
+  font: inherit; font-size: 12px; letter-spacing: 0; text-transform: none;
+  cursor: pointer; background: none; border: none; padding: 0; color: var(--accent);
+}
+.linkbtn:hover { text-decoration: underline; }
+
+.suggests { display: flex; flex-direction: column; gap: 8px; }
+.suggest {
+  font: inherit; font-size: 13.5px; text-align: left; cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  padding: 11px 13px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.12s ease;
+}
+.suggest::after {
+  content: "\2192"; margin-left: auto; color: var(--faint);
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+.suggest:hover {
+  border-color: var(--accent-deep); background: rgba(168, 52, 53, 0.05);
+}
+.suggest:hover::after { color: var(--accent); transform: translateX(3px); }
+.suggest.active { border-color: var(--accent-deep); background: rgba(168, 52, 53, 0.08); }
 
 .answer {
   margin-top: 6px; padding: 16px 18px; border-radius: 11px;

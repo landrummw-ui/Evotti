@@ -26,78 +26,85 @@
   </div>
 </header>
 
-<main class="view" id="view">
+<div class="page-head">
+  <h1>Sales Analysis</h1>
+  <span class="sub" id="range">&nbsp;</span>
+</div>
 
-  <div class="page-head">
-    <h1>Sales Analysis</h1>
-    <span class="sub" id="range">&nbsp;</span>
-  </div>
+<div class="layout">
 
-  <!-- Ask panel: the natural-language agent -->
-  <section class="card agent">
-    <div class="card-head">
-      <h2><span class="spark"></span> Ask the numbers</h2>
-      <span class="spacer"></span>
-    </div>
-    <p class="cap">Ask in plain English — "how did the Southeast do against plan in June?",
-       "units by product line", "which region is behind plan?"</p>
-    <div class="ask-row">
-      <input id="ask" type="text" autocomplete="off"
-             placeholder="Ask about sales, plan, variance, a region, a product line…">
-      <button class="btn primary" id="ask-go">Ask</button>
-    </div>
-    <div class="suggests" id="suggests"></div>
+  <!-- LEFT: the natural-language agent -->
+  <aside class="aside">
+    <section class="card agent">
+      <div class="card-head">
+        <h2><span class="spark"></span> Ask the numbers</h2>
+      </div>
+      <div class="ask-row">
+        <input id="ask" type="text" autocomplete="off"
+               placeholder="Ask about sales, plan, a region, a product line…">
+        <button class="btn primary" id="ask-go">Ask</button>
+      </div>
+
+      <div class="guide">
+        <div class="guide-head">
+          <span id="guide-label">Start here</span>
+          <button class="linkbtn" id="guide-reset" hidden>&larr; Start over</button>
+        </div>
+        <div class="suggests" id="suggests"></div>
+      </div>
+    </section>
+  </aside>
+
+  <!-- RIGHT: answer + dashboard -->
+  <main class="main">
+
     <div id="answer"></div>
-  </section>
 
-  <!-- KPI row -->
-  <section class="kpis" id="kpis"></section>
+    <section class="kpis" id="kpis"></section>
 
-  <!-- Trend -->
-  <section class="card">
-    <div class="card-head"><h2>Daily revenue — actual vs plan</h2></div>
-    <p class="cap" id="trend-cap">&nbsp;</p>
-    <div id="trend"></div>
-    <div class="legend">
-      <span><i style="border-color:#a83435"></i>Actual</span>
-      <span><i style="border-color:#c3c7cf;border-top-style:dashed"></i>Plan</span>
-    </div>
-  </section>
-
-  <!-- Breakdowns -->
-  <div class="grid-2">
     <section class="card">
-      <div class="card-head"><h2>By region</h2></div>
-      <p class="cap">Revenue, actual vs plan · full window</p>
-      <div id="by-region"></div>
+      <div class="card-head"><h2>Daily revenue — actual vs plan</h2></div>
+      <p class="cap" id="trend-cap">&nbsp;</p>
+      <div id="trend"></div>
       <div class="legend">
-        <span><i class="bar" style="background:#a83435"></i>Actual</span>
-        <span><i class="bar" style="background:#c3c7cf"></i>Plan</span>
+        <span><i style="border-color:#a83435"></i>Actual</span>
+        <span><i style="border-color:#47505f;border-top-style:dashed"></i>Plan</span>
       </div>
     </section>
-    <section class="card">
-      <div class="card-head"><h2>By product line</h2></div>
-      <p class="cap">Revenue, actual vs plan · full window</p>
-      <div id="by-line"></div>
-      <div class="legend">
-        <span><i class="bar" style="background:#a83435"></i>Actual</span>
-        <span><i class="bar" style="background:#c3c7cf"></i>Plan</span>
-      </div>
-    </section>
-  </div>
 
-  <!-- Monthly rollup -->
-  <section class="card">
-    <div class="card-head">
-      <h2>Monthly performance</h2>
-      <span class="spacer"></span>
-      <button class="btn sm" id="export">Export CSV</button>
+    <div class="grid-2">
+      <section class="card">
+        <div class="card-head"><h2>By region</h2></div>
+        <p class="cap">Revenue, actual vs plan · full window</p>
+        <div id="by-region"></div>
+        <div class="legend">
+          <span><i class="bar" style="background:#a83435"></i>Actual</span>
+          <span><i class="bar" style="background:#47505f"></i>Plan</span>
+        </div>
+      </section>
+      <section class="card">
+        <div class="card-head"><h2>By product line</h2></div>
+        <p class="cap">Revenue, actual vs plan · full window</p>
+        <div id="by-line"></div>
+        <div class="legend">
+          <span><i class="bar" style="background:#a83435"></i>Actual</span>
+          <span><i class="bar" style="background:#47505f"></i>Plan</span>
+        </div>
+      </section>
     </div>
-    <p class="cap">Actual vs plan by month. The current month is month-to-date.</p>
-    <div class="tbl-wrap"><table class="tbl" id="month-table"></table></div>
-  </section>
 
-</main>
+    <section class="card">
+      <div class="card-head">
+        <h2>Monthly performance</h2>
+        <span class="spacer"></span>
+        <button class="btn sm" id="export">Export CSV</button>
+      </div>
+      <p class="cap">Actual vs plan by month. The current month is month-to-date.</p>
+      <div class="tbl-wrap"><table class="tbl" id="month-table"></table></div>
+    </section>
+
+  </main>
+</div>
 
 <script src="data.js"></script>
 <script src="query.js"></script>

@@ -13,7 +13,8 @@
 
   var INK = "#16181c", MUTE = "#5c616b", FAINT = "#9297a1";
   var GRID = "#eef0f3", AXIS = "#cbced6";
-  var CRIMSON = "#a83435", GRAY = "#c3c7cf";
+  // Evotti scheme: brand crimson for actuals, brand charcoal for plan.
+  var CRIMSON = "#a83435", PLAN = "#47505f";
 
   function el(name, attrs, text) {
     var e = document.createElementNS(NS, name);
@@ -141,7 +142,7 @@
       var yy = v >= 0 ? y(v) : zero;
       s.appendChild(el("rect", { x: cx - bw / 2, y: yy, width: bw,
         height: Math.max(Math.abs(y(v) - zero), 1), rx: 3,
-        fill: v >= 0 ? CRIMSON : GRAY }));
+        fill: v >= 0 ? CRIMSON : PLAN }));
       s.appendChild(el("text", { x: cx, y: v >= 0 ? y(v) - 7 : y(v) + 16,
         "text-anchor": "middle", "font-size": 12, "font-weight": 600,
         fill: v >= 0 ? CRIMSON : MUTE },
@@ -153,5 +154,5 @@
   }
 
   root.SalesCharts = { lineChart: lineChart, groupedBars: groupedBars,
-    varianceBars: varianceBars, colors: { crimson: CRIMSON, gray: GRAY } };
+    varianceBars: varianceBars, colors: { crimson: CRIMSON, plan: PLAN } };
 })(typeof self !== "undefined" ? self : this);

@@ -2,8 +2,10 @@
 // Evotti Sales Analysis — app
 // =============================================================================
 // Loads the bundled data (window.EVOTTI_SALES), renders the dashboard, and
-// wires the natural-language agent. All aggregation goes through SalesQuery, so
-// the dashboard and the agent compute variance identically.
+// drives the natural-language agent: a free-text box plus a guided drill-down
+// (a starter question reveals follow-up options, which reveal the next set).
+// All aggregation goes through SalesQuery, so the dashboard and the agent
+// compute variance identically.
 // =============================================================================
 
 (function () {
@@ -13,7 +15,7 @@
   var PAYLOAD = window.EVOTTI_SALES;
 
   if (!PAYLOAD || !PAYLOAD.rows) {
-    document.getElementById("view").innerHTML =
+    document.querySelector(".main").innerHTML =
       '<p style="color:#a83435">Could not load sales data (data.js).</p>';
     return;
   }
@@ -22,7 +24,7 @@
   var CUR_MONTH = SQ.ym(AS_OF);
 
   var $ = function (id) { return document.getElementById(id); };
-  var color = { crimson: "#a83435", gray: "#c3c7cf" };
+  var color = { crimson: "#a83435", plan: "#47505f" };
 
   function init() {
     $("asof").textContent = "As of " + prettyDate(AS_OF);
@@ -41,25 +43,21 @@
     var mtd = SQ.totals(ROWS, { filters: { months: [CUR_MONTH] } });
     var all = SQ.totals(ROWS, { filters: {} });
 
-    // Full-month pace: extend MTD by the workdays remaining in the month.
     var total = SQ.workdaysInMonth(CUR_MONTH);
     var elapsed = distinctDates(ROWS, CUR_MONTH);
     var pace = elapsed ? mtd.revActual / elapsed * total : 0;
     var pacePlan = elapsed ? mtd.revForecast / elapsed * total : 0;
     var pacePct = pacePlan ? (pace - pacePlan) / pacePlan * 100 : 0;
+    var mon = SQ.MON3[+CUR_MONTH.split("-")[1] - 1];
 
     var cards = [
-      kpi(SQ.MON3[+CUR_MONTH.split("-")[1] - 1] + " revenue · MTD",
-        SQ.money(mtd.revActual),
+      kpi(mon + " revenue · MTD", SQ.money(mtd.revActual),
         "vs " + SQ.money(mtd.revForecast) + " plan", mtd.revVariancePct),
-      kpi(SQ.MON3[+CUR_MONTH.split("-")[1] - 1] + " units · MTD",
-        SQ.num(mtd.unitsActual) + " boats",
+      kpi(mon + " units · MTD", SQ.num(mtd.unitsActual) + " boats",
         "vs " + SQ.num(mtd.unitsForecast) + " plan", mtd.unitsVariancePct),
-      kpi("Full-month pace",
-        SQ.money(pace),
+      kpi("Full-month pace", SQ.money(pace),
         "on pace · " + elapsed + "/" + total + " workdays", pacePct),
-      kpi("Season to date",
-        SQ.money(all.revActual),
+      kpi("Season to date", SQ.money(all.revActual),
         "vs " + SQ.money(all.revForecast) + " plan", all.revVariancePct)
     ];
     $("kpis").innerHTML = cards.join("");
@@ -72,8 +70,7 @@
       '<div class="k-sub">' + esc(sub) + " " + chip(pct) + "</div></div>";
   }
   function chip(pct) {
-    var cls = pct >= 0 ? "pos" : "neg";
-    return '<span class="chip ' + cls + '">' + SQ.pct(pct) + "</span>";
+    return '<span class="chip ' + (pct >= 0 ? "pos" : "neg") + '">' + SQ.pct(pct) + "</span>";
   }
 
   // ---- charts --------------------------------------------------------------
@@ -83,7 +80,7 @@
     var cats = b.map(function (x) { return x.label; });
     var svg = SC.lineChart(cats, [
       { values: b.map(function (x) { return x.revActual; }), color: color.crimson },
-      { values: b.map(function (x) { return x.revForecast; }), color: color.gray, dashed: true }
+      { values: b.map(function (x) { return x.revForecast; }), color: color.plan, dashed: true }
     ], { fmt: SQ.money, height: 300 });
     slot("trend", svg);
     $("trend-cap").textContent = "Company-wide, " + cats[0] + " – " + cats[cats.length - 1];
@@ -94,7 +91,7 @@
     var cats = b.map(function (x) { return x.label; });
     var svg = SC.groupedBars(cats, [
       { values: b.map(function (x) { return x.revActual; }), color: color.crimson },
-      { values: b.map(function (x) { return x.revForecast; }), color: color.gray }
+      { values: b.map(function (x) { return x.revForecast; }), color: color.plan }
     ], { fmt: SQ.money, height: 280 });
     slot(elId, svg);
   }
@@ -150,29 +147,63 @@
     URL.revokeObjectURL(a.href);
   }
 
-  // ---- agent ---------------------------------------------------------------
+  // ---- guided question tree ------------------------------------------------
+  // Each node has a plain-English question the agent answers, plus the set of
+  // follow-ups to surface next. Follow-ups loop back to sibling explorations,
+  // so the drill-down never dead-ends.
 
-  var SUGGESTS = [
-    "How did the Southeast do vs plan in June?",
-    "Revenue by product line",
-    "Which region is behind plan?",
-    "Units by month",
-    "Q2 revenue vs plan by region"
-  ];
+  var TREE = {
+    start: ["plan", "where", "trend", "mtd"],
+    nodes: {
+      plan:  { label: "How are we tracking against plan?", q: "Revenue vs plan by month",     next: ["byRegion", "byLine", "q2", "units"] },
+      where: { label: "Where are we winning and losing?",  q: "Which region is behind plan?", next: ["worstRegion", "byLine", "units"] },
+      trend: { label: "Show the daily sales trend",        q: "Daily revenue trend",          next: ["q2", "byMonth", "units"] },
+      mtd:   { label: "How is July pacing so far?",        q: "July revenue vs plan",         next: ["mtdRegion", "byLine", "byMonth"] },
+
+      byRegion: { label: "Break it down by region",        q: "Revenue vs plan by region",       next: ["worstRegion", "byLine", "units"] },
+      byLine:   { label: "Break it down by product line",  q: "Revenue vs plan by product line", next: ["bestLine", "byRegion", "units"] },
+      q2:       { label: "Just look at Q2",                q: "Q2 revenue vs plan by region",    next: ["byLine", "byMonth"] },
+      units:    { label: "Show it in boats, not dollars",  q: "Units vs plan by month",          next: ["byRegion", "byLine"] },
+      byMonth:  { label: "Compare the months",             q: "Revenue by month",                next: ["byRegion", "byLine", "units"] },
+
+      worstRegion: { label: "Which region is furthest behind?", q: "Which region is behind plan?", next: ["byLine", "q2"] },
+      bestLine:    { label: "Which product line sells best?",   q: "Revenue by product line",      next: ["byRegion", "units"] },
+      mtdRegion:   { label: "July, by region",                  q: "July revenue by region",       next: ["byLine", "byMonth"] }
+    }
+  };
 
   function wireAgent() {
-    $("suggests").innerHTML = SUGGESTS.map(function (s) {
-      return '<button class="suggest">' + esc(s) + "</button>";
-    }).join("");
-    Array.prototype.forEach.call(document.querySelectorAll(".suggest"), function (btn) {
-      btn.onclick = function () { $("ask").value = btn.textContent; ask(); };
-    });
-    $("ask-go").onclick = ask;
-    $("ask").addEventListener("keydown", function (e) { if (e.key === "Enter") ask(); });
+    renderGuide(TREE.start, true);
+    $("guide-reset").onclick = function () { renderGuide(TREE.start, true); };
+    $("ask-go").onclick = function () { ask($("ask").value); };
+    $("ask").addEventListener("keydown", function (e) { if (e.key === "Enter") ask($("ask").value); });
   }
 
-  function ask() {
-    var q = $("ask").value.trim();
+  function renderGuide(ids, atStart) {
+    $("guide-label").textContent = atStart ? "Start here" : "Then explore";
+    $("guide-reset").hidden = atStart;
+    var box = $("suggests");
+    box.innerHTML = "";
+    ids.forEach(function (id) {
+      var node = TREE.nodes[id];
+      var b = document.createElement("button");
+      b.className = "suggest";
+      b.textContent = node.label;
+      b.onclick = function () { askNode(id); };
+      box.appendChild(b);
+    });
+  }
+
+  function askNode(id) {
+    var node = TREE.nodes[id];
+    ask(node.q);
+    renderGuide(node.next, false);
+  }
+
+  // ---- agent ---------------------------------------------------------------
+
+  function ask(qArg) {
+    var q = (qArg != null ? qArg : $("ask").value).trim();
     if (!q) return;
     thinking(q);
     fetch("/.netlify/functions/ask", {
@@ -189,7 +220,6 @@
         data.answer || SQ.describe(spec, result), result,
         data.source === "rules" ? "rules" : "live");
     }).catch(function () {
-      // No function / no key / offline: answer locally with the rule parser.
       var spec = SQ.interpret(q, PAYLOAD);
       var result = SQ.runQuery(PAYLOAD, spec);
       renderAnswer(q, spec, spec.title, SQ.describe(spec, result), result, "rules");
@@ -200,6 +230,7 @@
     $("answer").innerHTML =
       '<div class="answer"><div class="a-q">' + esc(q) + "</div>" +
       '<div class="thinking"><i></i><i></i><i></i></div></div>';
+    $("answer").scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
   function renderAnswer(q, spec, title, text, result, source) {
@@ -216,9 +247,22 @@
       "</span> · " + result.buckets.length + " group" +
       (result.buckets.length === 1 ? "" : "s") + "</div>";
     var svg = resultChart(spec, result);
-    if (svg) wrap.querySelector(".chart-slot").appendChild(svg);
+    if (svg) {
+      var s = wrap.querySelector(".chart-slot");
+      s.appendChild(svg);
+      s.insertAdjacentHTML("beforeend", answerLegend(spec));
+    }
     $("answer").innerHTML = "";
     $("answer").appendChild(wrap);
+  }
+
+  function answerLegend(spec) {
+    var isVar = spec.view === "variance" || spec.view === "variance_pct";
+    var a = isVar ? "Over plan" : "Actual";
+    var b = isVar ? "Under plan" : "Plan";
+    return '<div class="legend">' +
+      '<span><i class="bar" style="background:#a83435"></i>' + a + "</span>" +
+      '<span><i class="bar" style="background:#47505f"></i>' + b + "</span></div>";
   }
 
   function resultChart(spec, result) {
@@ -231,15 +275,13 @@
     var fKey = isUnits ? "unitsForecast" : "revForecast";
     var vKey = isUnits ? "unitsVariancePct" : "revVariancePct";
 
-    // Variance bars shine when comparing groups; a single result reads better
-    // as actual-vs-plan bars (the % is already in the sentence above).
     if ((spec.view === "variance" || spec.view === "variance_pct") && b.length >= 2) {
       return SC.varianceBars(cats, b.map(function (x) { return x[vKey]; }),
         { suffix: "%", height: 240 });
     }
     var series = [
       { values: b.map(function (x) { return x[aKey]; }), color: color.crimson },
-      { values: b.map(function (x) { return x[fKey]; }), color: color.gray,
+      { values: b.map(function (x) { return x[fKey]; }), color: color.plan,
         dashed: spec.chart === "line" }
     ];
     if (spec.chart === "line" || spec.group_by === "day" || spec.group_by === "week") {
