@@ -31,7 +31,8 @@ insert into public.tiles (id, key, title, description, href, status, sort) value
   (3, 'dealer_portal','Dealer Portal',      'A dealer''s queue, quoting tools, and shared visibility into build status.', 'dealer/', 'planned', 30),
   (4, 'build',        'Build Tracker',      'Follow a hull from order through the floor to shipment, with dates dealers and buyers can rely on.', '#',       'planned', 40),
   (5, 'warranty',     'Warranty & Service', 'Log claims against a specific hull, route them to the dealer, and spot issues repeating across a series.', '#',       'planned', 50),
-  (6, 'pricing',      'Options & Pricing',  'One source of truth for configurations and price, feeding the Boat Builder and every dealer quote.', '#',       'planned', 60)
+  (6, 'pricing',      'Options & Pricing',  'One source of truth for configurations and price, feeding the Boat Builder and every dealer quote.', '#',       'planned', 60),
+  (7, 'ai_dev',       'AI App & Agent Development', 'Manage the delivery lifecycle of AI applications and agents on a Kanban board — from request through go-live.', 'dev/', 'live', 25)
 on conflict (id) do update set
   key = excluded.key, title = excluded.title, description = excluded.description,
   href = excluded.href, status = excluded.status, sort = excluded.sort;
@@ -39,11 +40,11 @@ on conflict (id) do update set
 -- persona → tiles (who sees what) ----------------------------------------------
 insert into public.persona_tiles (persona_id, tile_id) values
   -- Leadership: everything
-  (1,1),(1,2),(1,3),(1,4),(1,5),(1,6),
+  (1,1),(1,2),(1,3),(1,4),(1,5),(1,6),(1,7),
   -- Sales
-  (2,1),(2,2),(2,3),(2,6),
-  -- Controller / Finance
-  (3,2),(3,4),(3,5),(3,6),
+  (2,1),(2,2),(2,3),(2,6),(2,7),
+  -- Controller / Finance  (AI dev visible to all except Dealer)
+  (3,2),(3,4),(3,5),(3,6),(3,7),
   -- Dealer (shown on the dealer home — they're already in the portal)
   (4,4),(4,5),(4,6)
 on conflict do nothing;

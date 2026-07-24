@@ -124,6 +124,11 @@ a.tile:hover, a.tile:focus-visible {
 }
 a.tile:focus-visible { border-color: var(--accent); }
 .tile.soon { opacity: 0.55; cursor: default; }
+.tile-icon {
+  width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center;
+  background: rgba(168, 52, 53, 0.08); color: var(--accent); margin-bottom: 16px;
+}
+.tile-icon svg { width: 20px; height: 20px; }
 .tile h2 { margin: 0 0 8px; font-size: 17px; font-weight: 650; letter-spacing: 0.01em; }
 .tile p { margin: 0; color: var(--muted); font-size: 14px; }
 .tile footer {

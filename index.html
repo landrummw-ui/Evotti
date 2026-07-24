@@ -48,6 +48,8 @@
   var TILES = {
     crm:          { title: "Evotti CRM",         desc: "Track Boat Builder leads from first configuration through dealer assignment, quote, and delivered build.", href: "/crm/",   status: "live" },
     sales:        { title: "Sales Analysis",     desc: "Daily actuals against plan by region and product line, with an agent that answers questions in plain English.", href: "/sales/", status: "live" },
+    ai_dev:       { title: "AI App & Agent Development", desc: "Manage the delivery lifecycle of AI applications and agents on a Kanban board — from request through go-live.", href: "/dev/", status: "live",
+                    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="4.5" height="16" rx="1"/><rect x="9.75" y="4" width="4.5" height="10" rx="1"/><rect x="16.5" y="4" width="4.5" height="13" rx="1"/></svg>' },
     dealer_portal:{ title: "Dealer Portal",      desc: "A dealer's queue, quoting tools, and shared visibility into build status.", href: "#", status: "planned" },
     build:        { title: "Build Tracker",      desc: "Follow a hull from order through the floor to shipment, with dates dealers and buyers can rely on.", href: "#", status: "planned" },
     warranty:     { title: "Warranty & Service", desc: "Log claims against a specific hull, route them to the dealer, and spot issues repeating across a series.", href: "#", status: "planned" },
@@ -55,9 +57,9 @@
   };
 
   var PERSONAS = [
-    { key: "leadership", name: "Leadership",          dealer: false, tiles: ["crm", "sales", "dealer_portal", "build", "warranty", "pricing"] },
-    { key: "sales",      name: "Sales",               dealer: false, tiles: ["crm", "sales", "dealer_portal", "pricing"] },
-    { key: "controller", name: "Controller",          dealer: false, tiles: ["sales", "build", "warranty", "pricing"] },
+    { key: "leadership", name: "Leadership",          dealer: false, tiles: ["crm", "sales", "ai_dev", "dealer_portal", "build", "warranty", "pricing"] },
+    { key: "sales",      name: "Sales",               dealer: false, tiles: ["crm", "sales", "ai_dev", "dealer_portal", "pricing"] },
+    { key: "controller", name: "Controller",          dealer: false, tiles: ["sales", "ai_dev", "build", "warranty", "pricing"] },
     { key: "dealer",     name: "Dealer",              dealer: true,  tiles: ["build", "warranty", "pricing"] }
   ];
 
@@ -124,6 +126,7 @@
       var t = TILES[k]; if (!t) return "";
       var live = t.status === "live";
       var inner =
+        (t.icon ? '<div class="tile-icon">' + t.icon + "</div>" : "") +
         "<h2>" + esc(t.title) + "</h2><p>" + esc(t.desc) + "</p>" +
         '<footer><span class="dot"></span> ' + (live ? "Live" : "Planned") +
         (live ? '<span class="arrow">&rarr;</span>' : "") + "</footer>";

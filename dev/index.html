@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI App &amp; Agent Development — Evotti</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23a83435'/><text x='16' y='24' font-family='Segoe UI,Helvetica,Arial,sans-serif' font-size='21' font-weight='700' fill='%23ffffff' text-anchor='middle'>E</text></svg>">
+<link rel="stylesheet" href="/platform/platform.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="appbar">
+  <a class="lockup" href="/">
+    <img src="/assets/evotti-logo-black.png" alt="Evotti">
+    <span class="rule"></span>
+    <span class="sub">Apps</span>
+  </a>
+  <span class="spacer"></span>
+  <a class="backlink" href="/">&larr; All apps</a>
+</header>
+<div class="appbar-line"></div>
+
+<div class="board-head">
+  <div>
+    <h1>AI App &amp; Agent Development</h1>
+    <p class="cap" id="summary">&nbsp;</p>
+  </div>
+  <span class="spacer"></span>
+  <div class="controls">
+    <input id="search" type="search" placeholder="Search title, requester, tags…" autocomplete="off">
+    <div class="typefilter" id="typefilter"></div>
+    <label class="toggle"><input type="checkbox" id="show-rejected"> Rejected</label>
+    <button class="btn primary" id="new">+ New Request</button>
+  </div>
+</div>
+
+<div class="board" id="board"></div>
+
+<div class="modal-backdrop" id="modal-detail" hidden><div class="modal wide" id="detail-body"></div></div>
+<div class="modal-backdrop" id="modal-new" hidden><div class="modal" id="new-body"></div></div>
+<div class="modal-backdrop" id="modal-reject" hidden><div class="modal small" id="reject-body"></div></div>
+
+<script src="app.js"></script>
+</body>
+</html>
