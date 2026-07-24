@@ -119,16 +119,20 @@ a { color: inherit; }
   transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
 }
 a.tile:hover, a.tile:focus-visible {
-  background: var(--surface-hi); border-color: var(--border-hi);
+  background: var(--surface-hi);
+  border-color: color-mix(in srgb, var(--tile, var(--accent)) 50%, var(--border-hi));
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--tile, var(--accent)) 14%, transparent);
   transform: translateY(-3px); outline: none;
 }
-a.tile:focus-visible { border-color: var(--accent); }
-.tile.soon { opacity: 0.55; cursor: default; }
+a.tile:focus-visible { border-color: var(--tile, var(--accent)); }
+.tile.soon { opacity: 0.6; cursor: default; }
 .tile-icon {
-  width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center;
-  background: rgba(168, 52, 53, 0.08); color: var(--accent); margin-bottom: 16px;
+  width: 42px; height: 42px; border-radius: 11px; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--tile, var(--accent)) 13%, transparent);
+  color: var(--tile, var(--accent)); margin-bottom: 16px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tile, var(--accent)) 18%, transparent);
 }
-.tile-icon svg { width: 20px; height: 20px; }
+.tile-icon svg { width: 22px; height: 22px; }
 .tile h2 { margin: 0 0 8px; font-size: 17px; font-weight: 650; letter-spacing: 0.01em; }
 .tile p { margin: 0; color: var(--muted); font-size: 14px; }
 .tile footer {
@@ -136,7 +140,7 @@ a.tile:focus-visible { border-color: var(--accent); }
   font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint);
 }
 .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.tile.live footer { color: var(--accent); }
+.tile.live footer { color: var(--tile, var(--accent)); }
 .arrow { margin-left: auto; color: var(--muted); font-size: 15px; transition: transform 0.18s ease; }
 a.tile:hover .arrow { transform: translateX(3px); }
 

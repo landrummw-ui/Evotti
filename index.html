@@ -45,15 +45,53 @@
 <script>
   // Self-contained demo of the persona-driven platform (no login required).
   // Real access control gets wired up after the demo; this mirrors the model.
+  var SVG = function (paths) {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+      'stroke-linecap="round" stroke-linejoin="round">' + paths + "</svg>";
+  };
   var TILES = {
-    crm:          { title: "Evotti CRM",         desc: "Track Boat Builder leads from first configuration through dealer assignment, quote, and delivered build.", href: "/crm/",   status: "live" },
-    sales:        { title: "Sales Analysis",     desc: "Daily actuals against plan by region and product line, with an agent that answers questions in plain English.", href: "/sales/", status: "live" },
-    ai_dev:       { title: "AI App & Agent Development", desc: "Manage the delivery lifecycle of AI applications and agents on a Kanban board — from request through go-live.", href: "/dev/", status: "live",
-                    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="4.5" height="16" rx="1"/><rect x="9.75" y="4" width="4.5" height="10" rx="1"/><rect x="16.5" y="4" width="4.5" height="13" rx="1"/></svg>' },
-    dealer_portal:{ title: "Dealer Portal",      desc: "A dealer's queue, quoting tools, and shared visibility into build status.", href: "#", status: "planned" },
-    build:        { title: "Build Tracker",      desc: "Follow a hull from order through the floor to shipment, with dates dealers and buyers can rely on.", href: "#", status: "planned" },
-    warranty:     { title: "Warranty & Service", desc: "Log claims against a specific hull, route them to the dealer, and spot issues repeating across a series.", href: "#", status: "planned" },
-    pricing:      { title: "Options & Pricing",  desc: "One source of truth for configurations and price, feeding the Boat Builder and every dealer quote.", href: "#", status: "planned" }
+    crm: {
+      title: "Evotti CRM",
+      desc: "Track Boat Builder leads from first configuration through dealer assignment, quote, and delivered build.",
+      href: "/crm/", status: "live", color: "#a83435",
+      icon: SVG('<circle cx="9" cy="8" r="3.2"/><path d="M3.6 19.5a5.4 5.4 0 0 1 10.8 0"/><path d="M15.5 5.4a3.2 3.2 0 0 1 0 5.9"/><path d="M17.8 19.5a5.4 5.4 0 0 0-2.3-4.4"/>')
+    },
+    sales: {
+      title: "Sales Analysis",
+      desc: "Daily actuals against plan by region and product line, with an agent that answers questions in plain English.",
+      href: "/sales/", status: "live", color: "#17786b",
+      icon: SVG('<path d="M4 4v16h16"/><rect x="7" y="11" width="2.6" height="6" rx="0.6"/><rect x="11.7" y="7.5" width="2.6" height="9.5" rx="0.6"/><rect x="16.4" y="13.5" width="2.6" height="3.5" rx="0.6"/>')
+    },
+    ai_dev: {
+      title: "AI App & Agent Development",
+      desc: "Manage the delivery lifecycle of AI applications and agents on a Kanban board — from request through go-live.",
+      href: "/dev/", status: "live", color: "#5a54c9",
+      icon: SVG('<rect x="3" y="4" width="4.5" height="16" rx="1"/><rect x="9.75" y="4" width="4.5" height="10" rx="1"/><rect x="16.5" y="4" width="4.5" height="13" rx="1"/>')
+    },
+    dealer_portal: {
+      title: "Dealer Portal",
+      desc: "A dealer's queue, quoting tools, and shared visibility into build status.",
+      href: "#", status: "planned", color: "#b5761f",
+      icon: SVG('<path d="M4.5 9.5 6 5h12l1.5 4.5"/><path d="M5 9.5v9.5h14V9.5"/><path d="M4.5 9.5a2.4 2.4 0 0 0 4.9 0 2.4 2.4 0 0 0 4.9 0 2.4 2.4 0 0 0 4.7 0"/><path d="M9.5 19v-4.5h5V19"/>')
+    },
+    build: {
+      title: "Build Tracker",
+      desc: "Follow a hull from order through the floor to shipment, with dates dealers and buyers can rely on.",
+      href: "#", status: "planned", color: "#2f6f8f",
+      icon: SVG('<path d="M4 14.5h16l-1.8 3.8a2 2 0 0 1-1.8 1.2H7.6a2 2 0 0 1-1.8-1.2z"/><path d="M9 14.5V4l6.5 4.2L9 10.5"/>')
+    },
+    warranty: {
+      title: "Warranty & Service",
+      desc: "Log claims against a specific hull, route them to the dealer, and spot issues repeating across a series.",
+      href: "#", status: "planned", color: "#3f7d54",
+      icon: SVG('<path d="M12 3.2 19 6v5.5c0 4.3-2.9 7.3-7 8.8-4.1-1.5-7-4.5-7-8.8V6z"/><path d="M9 12l2.1 2.1L15.2 10"/>')
+    },
+    pricing: {
+      title: "Options & Pricing",
+      desc: "One source of truth for configurations and price, feeding the Boat Builder and every dealer quote.",
+      href: "#", status: "planned", color: "#9a6b1f",
+      icon: SVG('<path d="M20.4 12.7 12.3 4.6a2 2 0 0 0-1.4-.6H5a1 1 0 0 0-1 1v5.9a2 2 0 0 0 .6 1.4l8.1 8.1a2 2 0 0 0 2.8 0l4.9-4.9a2 2 0 0 0 0-2.8z"/><circle cx="8" cy="8" r="1.3"/>')
+    }
   };
 
   var PERSONAS = [
@@ -125,14 +163,15 @@
     $("tiles").innerHTML = keys.map(function (k) {
       var t = TILES[k]; if (!t) return "";
       var live = t.status === "live";
+      var style = t.color ? ' style="--tile:' + t.color + '"' : "";
       var inner =
         (t.icon ? '<div class="tile-icon">' + t.icon + "</div>" : "") +
         "<h2>" + esc(t.title) + "</h2><p>" + esc(t.desc) + "</p>" +
         '<footer><span class="dot"></span> ' + (live ? "Live" : "Planned") +
         (live ? '<span class="arrow">&rarr;</span>' : "") + "</footer>";
       return live
-        ? '<a class="tile live" href="' + t.href + '">' + inner + "</a>"
-        : '<div class="tile soon">' + inner + "</div>";
+        ? '<a class="tile live"' + style + ' href="' + t.href + '">' + inner + "</a>"
+        : '<div class="tile soon"' + style + ">" + inner + "</div>";
     }).join("");
   }
 
