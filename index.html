@@ -62,6 +62,12 @@
       href: "/sales/", status: "live", color: "#17786b",
       icon: SVG('<path d="M4 4v16h16"/><rect x="7" y="11" width="2.6" height="6" rx="0.6"/><rect x="11.7" y="7.5" width="2.6" height="9.5" rx="0.6"/><rect x="16.4" y="13.5" width="2.6" height="3.5" rx="0.6"/>')
     },
+    voice: {
+      title: "Sales — Voice",
+      desc: "Ask about sales out loud and hear the answer back — the sales agent, hands-free on your phone.",
+      href: "/voice/", status: "live", color: "#7a3fb0",
+      icon: SVG('<rect x="9.5" y="3" width="5" height="10" rx="2.5"/><path d="M6.5 10.5a5.5 5.5 0 0 0 11 0"/><path d="M12 16v4"/><path d="M8.5 20h7"/>')
+    },
     ai_dev: {
       title: "AI App & Agent Development",
       desc: "Manage the delivery lifecycle of AI applications and agents on a Kanban board — from request through go-live.",
@@ -95,9 +101,9 @@
   };
 
   var PERSONAS = [
-    { key: "leadership", name: "Leadership",          dealer: false, tiles: ["crm", "sales", "ai_dev", "dealer_portal", "build", "warranty", "pricing"] },
-    { key: "sales",      name: "Sales",               dealer: false, tiles: ["crm", "sales", "ai_dev", "dealer_portal", "pricing"] },
-    { key: "controller", name: "Controller",          dealer: false, tiles: ["sales", "ai_dev", "build", "warranty", "pricing"] },
+    { key: "leadership", name: "Leadership",          dealer: false, tiles: ["crm", "sales", "voice", "ai_dev", "dealer_portal", "build", "warranty", "pricing"] },
+    { key: "sales",      name: "Sales",               dealer: false, tiles: ["crm", "sales", "voice", "ai_dev", "dealer_portal", "pricing"] },
+    { key: "controller", name: "Controller",          dealer: false, tiles: ["sales", "voice", "ai_dev", "build", "warranty", "pricing"] },
     { key: "dealer",     name: "Dealer",              dealer: true,  tiles: ["build", "warranty", "pricing"] }
   ];
 

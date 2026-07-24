@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Evotti Sales — Voice</title>
+<meta name="description" content="Ask Evotti sales questions by voice and hear the answer.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#a83435">
+<!-- Home-screen / standalone tile -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Evotti Voice">
+<link rel="apple-touch-icon" href="/voice/icon-180.png">
+<link rel="icon" href="/voice/icon-192.png">
+<link rel="manifest" href="/voice/site.webmanifest">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="vbar">
+  <a class="lockup" href="/">
+    <img src="/assets/evotti-logo-black.png" alt="Evotti">
+    <span class="rule"></span>
+    <span class="sub">Voice</span>
+  </a>
+  <span class="spacer"></span>
+  <a class="backlink" href="/sales/">Dashboard &rarr;</a>
+</header>
+
+<main class="stage">
+
+  <section class="mic-wrap">
+    <button id="mic" class="mic" aria-label="Tap to talk">
+      <svg class="ic-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="3" width="6" height="11" rx="3"/>
+        <path d="M6 11a6 6 0 0 0 12 0"/>
+        <path d="M12 17v4"/><path d="M9 21h6"/>
+      </svg>
+      <span class="pulse" aria-hidden="true"></span>
+    </button>
+    <p class="prompt" id="prompt">Tap and ask about sales</p>
+    <p class="heard" id="heard">&nbsp;</p>
+  </section>
+
+  <section class="answer" id="answer" hidden>
+    <p class="a-period" id="a-period"></p>
+    <div class="a-kpi">
+      <span class="a-big" id="a-big">—</span>
+      <span class="a-var" id="a-var"></span>
+    </div>
+    <p class="a-sub" id="a-sub"></p>
+    <div class="a-bars" id="a-bars"></div>
+    <p class="a-said" id="a-said"></p>
+  </section>
+
+  <section class="examples">
+    <p class="ex-lbl">Try</p>
+    <div class="ex-chips" id="ex-chips"></div>
+  </section>
+
+  <form class="typed" id="typed" autocomplete="off">
+    <input id="q" type="text" placeholder="…or type a question" aria-label="Type a question">
+    <button class="ask" id="ask" type="submit" aria-label="Ask">Ask</button>
+  </form>
+
+  <p class="hint" id="hint"></p>
+</main>
+
+<script src="/sales/data.js"></script>
+<script src="/sales/query.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

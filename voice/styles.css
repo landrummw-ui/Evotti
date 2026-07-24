@@ -1,0 +1,156 @@
+/* =============================================================================
+   Evotti Sales — Voice (mobile-first, brand light theme)
+   ============================================================================= */
+
+:root {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --surface-hi: #eef0f3;
+  --border: #e2e4ea;
+  --border-hi: #cbced6;
+  --text: #16181c;
+  --muted: #5c616b;
+  --faint: #9297a1;
+  --accent: #a83435;
+  --accent-deep: #8e3332;
+  --green: #2f7d4f;
+  --red: #b23a3a;
+  --radius: 16px;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+  display: flex; flex-direction: column;
+  min-height: 100%;
+}
+a { color: inherit; text-decoration: none; }
+
+/* -------------------------------------------------------------------- bar -- */
+.vbar {
+  display: flex; align-items: center; gap: 12px;
+  padding: max(14px, env(safe-area-inset-top)) 20px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.lockup { display: flex; align-items: center; gap: 11px; }
+.lockup img { height: 26px; width: auto; display: block; }
+.lockup .rule { width: 1px; height: 19px; background: var(--border-hi); }
+.lockup .sub { font-size: 12px; font-weight: 300; letter-spacing: 0.28em; text-transform: uppercase; color: var(--muted); }
+.vbar .spacer { margin-left: auto; }
+.backlink { font-size: 12px; letter-spacing: 0.06em; color: var(--muted); }
+
+/* ------------------------------------------------------------------ stage -- */
+.stage {
+  flex: 1; width: 100%; max-width: 520px; margin: 0 auto;
+  padding: 20px 20px calc(24px + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column;
+}
+
+/* ------------------------------------------------------------------- mic -- */
+.mic-wrap { text-align: center; padding: 18px 0 8px; }
+.mic {
+  position: relative; width: 128px; height: 128px; border-radius: 50%;
+  border: none; cursor: pointer; color: #fff;
+  background: radial-gradient(circle at 50% 38%, #bb4142, var(--accent-deep));
+  box-shadow: 0 12px 30px rgba(168,52,53,0.32), inset 0 1px 0 rgba(255,255,255,0.25);
+  display: grid; place-items: center;
+  transition: transform 0.12s ease, box-shadow 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.mic:active { transform: scale(0.96); }
+.mic .ic-mic { width: 46px; height: 46px; }
+.mic .pulse {
+  position: absolute; inset: 0; border-radius: 50%;
+  box-shadow: 0 0 0 0 rgba(168,52,53,0.45); opacity: 0;
+}
+.mic.listening { background: radial-gradient(circle at 50% 38%, #cf4a4b, var(--accent)); }
+.mic.listening .pulse { animation: ring 1.4s ease-out infinite; opacity: 1; }
+.mic.thinking { opacity: 0.9; }
+.mic.thinking .ic-mic { animation: spinp 1s linear infinite; transform-origin: 50% 50%; }
+@keyframes ring {
+  0% { box-shadow: 0 0 0 0 rgba(168,52,53,0.45); }
+  100% { box-shadow: 0 0 0 26px rgba(168,52,53,0); }
+}
+@keyframes spinp { to { transform: rotate(360deg); } }
+
+.prompt { margin: 16px 0 2px; font-size: 15px; color: var(--muted); }
+.heard {
+  margin: 2px 0 0; min-height: 22px; font-size: 17px; font-weight: 600;
+  color: var(--text); letter-spacing: -0.01em;
+}
+.heard.interim { color: var(--faint); font-weight: 500; }
+
+/* ---------------------------------------------------------------- answer -- */
+.answer {
+  margin: 14px 0 4px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 20px; animation: rise 0.24s ease;
+}
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.a-period { margin: 0 0 8px; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint); }
+.a-kpi { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.a-big { font-size: 40px; font-weight: 750; letter-spacing: -0.02em; line-height: 1; }
+.a-var { font-size: 15px; font-weight: 650; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+.a-var.up { color: var(--green); background: rgba(47,125,79,0.10); }
+.a-var.down { color: var(--red); background: rgba(178,58,58,0.10); }
+.a-var.flat { color: var(--muted); background: var(--surface-hi); }
+.a-sub { margin: 10px 0 0; font-size: 14px; color: var(--muted); }
+
+.a-bars { margin: 16px 0 0; display: flex; flex-direction: column; gap: 9px; }
+.a-bars:empty { display: none; }
+.bar-row { display: grid; grid-template-columns: 92px 1fr auto; align-items: center; gap: 10px; font-size: 13px; }
+.bar-row .bl { color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-track { height: 8px; background: var(--surface-hi); border-radius: 999px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 999px; background: var(--accent); }
+.bar-row .bv { font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
+.bar-row .bv b { color: var(--text); }
+.bar-row .bv .vp { margin-left: 6px; font-weight: 650; }
+.bar-row .bv .vp.up { color: var(--green); }
+.bar-row .bv .vp.down { color: var(--red); }
+
+.a-said {
+  margin: 16px 0 0; padding-top: 14px; border-top: 1px solid var(--border);
+  font-size: 13px; color: var(--faint); display: flex; align-items: center; gap: 8px;
+}
+.a-said::before { content: "🔊"; font-size: 13px; }
+
+/* -------------------------------------------------------------- examples -- */
+.examples { margin: 18px 0 6px; }
+.ex-lbl { margin: 0 0 9px; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint); }
+.ex-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font: inherit; font-size: 13px; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--border-hi); color: var(--text);
+  border-radius: 999px; padding: 8px 13px;
+  transition: border-color 0.14s ease, background 0.14s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.chip:hover, .chip:active { border-color: var(--accent-deep); background: var(--surface-hi); }
+
+/* ----------------------------------------------------------------- typed -- */
+.typed { margin-top: auto; padding-top: 18px; display: flex; gap: 8px; }
+.typed input {
+  flex: 1; font: inherit; font-size: 16px; color: var(--text);
+  background: var(--surface); border: 1px solid var(--border-hi);
+  border-radius: 11px; padding: 12px 14px;
+}
+.typed input:focus { outline: none; border-color: var(--accent); }
+.ask {
+  font: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+  color: #fff; background: var(--accent-deep); border: 1px solid var(--accent-deep);
+  border-radius: 11px; padding: 0 18px;
+}
+.ask:hover { background: var(--accent); }
+
+.hint { margin: 12px 0 0; min-height: 18px; font-size: 12.5px; color: var(--faint); text-align: center; }
+.hint.warn { color: var(--accent); }
+
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
