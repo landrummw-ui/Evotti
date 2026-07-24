@@ -28,7 +28,15 @@
   var color = { crimson: "#a83435", plan: "#47505f" };
 
   // Dashboard filter state (single-select per dimension; "" = all).
-  var FILTER = { region: "", line: "" };
+  var FILTER = { region: "", line: "", quarter: "" };
+
+  // Calendar quarters (2026). The data spans Feb–Jul, so Q1 is partial (Feb–Mar)
+  // and Q3 is month-to-date (Jul); unmatched months simply contribute nothing.
+  var QUARTERS = {
+    Q1: ["2026-01", "2026-02", "2026-03"],
+    Q2: ["2026-04", "2026-05", "2026-06"],
+    Q3: ["2026-07", "2026-08", "2026-09"]
+  };
 
   function init() {
     $("asof").textContent = "As of " + prettyDate(AS_OF);
@@ -39,12 +47,19 @@
     wireMaximize();
   }
 
-  // Merge the active filter pills into a query filter object.
+  // Region + product-line filter (used by the "now" KPI cards).
   function filt(extra) {
     var f = {};
     if (FILTER.region) f.regions = [FILTER.region];
     if (FILTER.line) f.product_lines = [FILTER.line];
     if (extra) for (var k in extra) f[k] = extra[k];
+    return f;
+  }
+
+  // Same, plus the selected quarter — used by every time-based view.
+  function filtQ(extra) {
+    var f = filt(extra);
+    if (FILTER.quarter && QUARTERS[FILTER.quarter]) f.months = QUARTERS[FILTER.quarter];
     return f;
   }
 
@@ -61,7 +76,8 @@
   function renderFilters() {
     $("filters").innerHTML =
       '<div class="fgroup"><span class="flabel">Region</span>' + pillSet("region", SQ.REGIONS) + "</div>" +
-      '<div class="fgroup"><span class="flabel">Product line</span>' + pillSet("line", SQ.LINES) + "</div>";
+      '<div class="fgroup"><span class="flabel">Product line</span>' + pillSet("line", SQ.LINES) + "</div>" +
+      '<div class="fgroup"><span class="flabel">Quarter</span>' + pillSet("quarter", ["Q1", "Q2", "Q3"]) + "</div>";
     Array.prototype.forEach.call(document.querySelectorAll(".fpill"), function (el) {
       el.onclick = function () {
         var dim = el.getAttribute("data-dim"), val = el.getAttribute("data-val");
@@ -91,26 +107,42 @@
   // ---- KPIs ----------------------------------------------------------------
 
   function renderKpis() {
-    var mtd = SQ.totals(ROWS, { filters: filt({ months: [CUR_MONTH] }) });
     var all = SQ.totals(ROWS, { filters: filt() });
+    var cards;
 
-    var total = SQ.workdaysInMonth(CUR_MONTH);
-    var elapsed = distinctDates(ROWS, CUR_MONTH);
-    var pace = elapsed ? mtd.revActual / elapsed * total : 0;
-    var pacePlan = elapsed ? mtd.revForecast / elapsed * total : 0;
-    var pacePct = pacePlan ? (pace - pacePlan) / pacePlan * 100 : 0;
-    var mon = SQ.MON3[+CUR_MONTH.split("-")[1] - 1];
-
-    var cards = [
-      kpi(mon + " revenue · MTD", SQ.money(mtd.revActual),
-        "vs " + SQ.money(mtd.revForecast) + " plan", mtd.revVariancePct),
-      kpi(mon + " units · MTD", SQ.num(mtd.unitsActual) + " boats",
-        "vs " + SQ.num(mtd.unitsForecast) + " plan", mtd.unitsVariancePct),
-      kpi("Full-month pace", SQ.money(pace),
-        "on pace · " + elapsed + "/" + total + " workdays", pacePct),
-      kpi("Season to date", SQ.money(all.revActual),
-        "vs " + SQ.money(all.revForecast) + " plan", all.revVariancePct)
-    ];
+    if (FILTER.quarter) {
+      // Quarter selected: the cards speak to that quarter instead of MTD.
+      var q = SQ.totals(ROWS, { filters: filt({ months: QUARTERS[FILTER.quarter] }) });
+      var ql = FILTER.quarter + " 2026";
+      cards = [
+        kpi(ql + " revenue", SQ.money(q.revActual),
+          "vs " + SQ.money(q.revForecast) + " plan", q.revVariancePct),
+        kpi(ql + " units", SQ.num(q.unitsActual) + " boats",
+          "vs " + SQ.num(q.unitsForecast) + " plan", q.unitsVariancePct),
+        kpi(ql + " variance", SQ.money(q.revVariance),
+          "revenue vs plan", q.revVariancePct),
+        kpi("Season to date", SQ.money(all.revActual),
+          "vs " + SQ.money(all.revForecast) + " plan", all.revVariancePct)
+      ];
+    } else {
+      var mtd = SQ.totals(ROWS, { filters: filt({ months: [CUR_MONTH] }) });
+      var total = SQ.workdaysInMonth(CUR_MONTH);
+      var elapsed = distinctDates(ROWS, CUR_MONTH);
+      var pace = elapsed ? mtd.revActual / elapsed * total : 0;
+      var pacePlan = elapsed ? mtd.revForecast / elapsed * total : 0;
+      var pacePct = pacePlan ? (pace - pacePlan) / pacePlan * 100 : 0;
+      var mon = SQ.MON3[+CUR_MONTH.split("-")[1] - 1];
+      cards = [
+        kpi(mon + " revenue · MTD", SQ.money(mtd.revActual),
+          "vs " + SQ.money(mtd.revForecast) + " plan", mtd.revVariancePct),
+        kpi(mon + " units · MTD", SQ.num(mtd.unitsActual) + " boats",
+          "vs " + SQ.num(mtd.unitsForecast) + " plan", mtd.unitsVariancePct),
+        kpi("Full-month pace", SQ.money(pace),
+          "on pace · " + elapsed + "/" + total + " workdays", pacePct),
+        kpi("Season to date", SQ.money(all.revActual),
+          "vs " + SQ.money(all.revForecast) + " plan", all.revVariancePct)
+      ];
+    }
     $("kpis").innerHTML = cards.join("");
   }
 
@@ -127,7 +159,7 @@
   // ---- charts --------------------------------------------------------------
 
   function trendChart(height) {
-    var b = SQ.aggregate(ROWS, { group_by: "day", filters: filt() });
+    var b = SQ.aggregate(ROWS, { group_by: "day", filters: filtQ() });
     var cats = b.map(function (x) { return x.label; });
     return {
       buckets: b,
@@ -139,7 +171,7 @@
   }
 
   function breakdownChart(groupBy, height) {
-    var b = SQ.aggregate(ROWS, { group_by: groupBy, filters: filt() });
+    var b = SQ.aggregate(ROWS, { group_by: groupBy, filters: filtQ() });
     var cats = b.map(function (x) { return x.label; });
     return {
       buckets: b,
@@ -164,8 +196,8 @@
   // ---- monthly table -------------------------------------------------------
 
   function renderMonthTable() {
-    var b = SQ.aggregate(ROWS, { group_by: "month", filters: filt() });
-    var t = SQ.totals(ROWS, { filters: filt() });
+    var b = SQ.aggregate(ROWS, { group_by: "month", filters: filtQ() });
+    var t = SQ.totals(ROWS, { filters: filtQ() });
     var head = "<thead><tr>" +
       th("Month") + th("Units") + th("Plan") + th("Revenue") + th("Plan") +
       th("Var $") + th("Var %") + "</tr></thead>";
@@ -249,7 +281,7 @@
 
     // Table: monthly rollup for the daily trend, else the grouped buckets.
     var tblBuckets = kind === "trend"
-      ? SQ.aggregate(ROWS, { group_by: "month", filters: filt() }) : chart.buckets;
+      ? SQ.aggregate(ROWS, { group_by: "month", filters: filtQ() }) : chart.buckets;
     var colName = kind === "trend" ? "Month" : (kind === "region" ? "Region" : "Product line");
     body.insertAdjacentHTML("beforeend", bucketTable(tblBuckets, colName));
 
