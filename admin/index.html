@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>User Admin — Evotti Apps</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23a83435'/><text x='16' y='24' font-family='Segoe UI,Helvetica,Arial,sans-serif' font-size='21' font-weight='700' fill='%23ffffff' text-anchor='middle'>E</text></svg>">
+<link rel="stylesheet" href="/platform/platform.css">
+</head>
+<body>
+
+<header class="appbar">
+  <a class="lockup" href="/">
+    <img src="/assets/evotti-logo-black.png" alt="Evotti">
+    <span class="rule"></span>
+    <span class="sub">Apps</span>
+  </a>
+  <span class="spacer"></span>
+  <div id="user"></div>
+</header>
+<div class="appbar-line"></div>
+
+<div class="wrap">
+  <div class="section-head">
+    <a href="/" style="text-decoration:none;color:var(--faint);font-size:13px">&larr; Apps</a>
+    <span class="spacer"></span>
+  </div>
+  <div class="section-head">
+    <h1>Users &amp; access</h1>
+    <span class="sub" id="count">&nbsp;</span>
+  </div>
+
+  <section class="card">
+    <h2>Add a user</h2>
+    <form id="create">
+      <div class="form-grid">
+        <label>Full name<input id="c-name" required></label>
+        <label>Email<input id="c-email" type="email" required></label>
+        <label>Temporary password<input id="c-pass" type="text" value="evotti1234" required></label>
+        <label>Persona
+          <select id="c-persona" required></select>
+        </label>
+        <label id="c-dealer-wrap" hidden>Dealer company
+          <select id="c-dealer"></select>
+        </label>
+      </div>
+      <div class="form-actions">
+        <button class="btn primary" type="submit" id="c-go">Create user</button>
+        <span class="formmsg" id="c-msg"></span>
+      </div>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>All users</h2>
+    <div class="tbl-wrap"><table class="tbl" id="users"></table></div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/platform/config.js"></script>
+<script src="/platform/platform.js"></script>
+<script>
+  var PERSONAS = [], DEALERS = [], TOKEN = null, DEALER_PERSONA_ID = null;
+  var $ = function (id) { return document.getElementById(id); };
+
+  Evotti.gate({ requireLeadership: true }).then(function (profile) {
+    if (!profile) return;
+    $("user").innerHTML = Evotti.userMenu(profile);
+    Evotti.wireUserMenu();
+    Evotti.accessToken().then(function (t) { TOKEN = t; });
+    loadLookups().then(loadUsers);
+  });
+
+  function loadLookups() {
+    return Promise.all([
+      Evotti.client.from("personas").select("id,key,name,is_dealer").order("sort"),
+      Evotti.client.from("dealers").select("id,name,region").order("name")
+    ]).then(function (res) {
+      PERSONAS = res[0].data || [];
+      DEALERS = res[1].data || [];
+      var dp = PERSONAS.filter(function (p) { return p.is_dealer; })[0];
+      DEALER_PERSONA_ID = dp ? dp.id : null;
+      $("c-persona").innerHTML = PERSONAS.map(function (p) {
+        return '<option value="' + p.id + '">' + Evotti.esc(p.name) + "</option>";
+      }).join("");
+      $("c-dealer").innerHTML = DEALERS.map(function (d) {
+        return '<option value="' + d.id + '">' + Evotti.esc(d.name + " · " + d.region) + "</option>";
+      }).join("");
+      $("c-persona").onchange = toggleDealer;
+      toggleDealer();
+    });
+  }
+
+  function toggleDealer() {
+    var isDealer = +$("c-persona").value === DEALER_PERSONA_ID;
+    $("c-dealer-wrap").hidden = !isDealer;
+  }
+
+  function loadUsers() {
+    return Evotti.client.from("profiles")
+      .select("id,full_name,email,persona:personas(id,key,name),dealer:dealers(id,name)")
+      .then(function (r) {
+        var users = (r.data || []).sort(function (a, b) {
+          return (a.full_name || a.email || "").localeCompare(b.full_name || b.email || "");
+        });
+        $("count").textContent = users.length + (users.length === 1 ? " user" : " users");
+        renderUsers(users);
+      });
+  }
+
+  function renderUsers(users) {
+    var head = "<thead><tr><th>Name</th><th>Email</th><th>Persona</th><th>Dealer</th><th></th></tr></thead>";
+    var body = users.map(function (u) {
+      var pk = u.persona ? u.persona.key : "";
+      var personaSel = '<select data-id="' + u.id + '" class="row-persona">' +
+        PERSONAS.map(function (p) {
+          return '<option value="' + p.id + '"' + (u.persona && u.persona.id === p.id ? " selected" : "") +
+            ">" + Evotti.esc(p.name) + "</option>";
+        }).join("") + "</select>";
+      var dealerSel = '<select data-id="' + u.id + '" class="row-dealer"' +
+        (u.persona && DEALER_PERSONA_ID === u.persona.id ? "" : " hidden") + '>' +
+        '<option value="">—</option>' +
+        DEALERS.map(function (d) {
+          return '<option value="' + d.id + '"' + (u.dealer && u.dealer.id === d.id ? " selected" : "") +
+            ">" + Evotti.esc(d.name) + "</option>";
+        }).join("") + "</select>";
+      return "<tr>" +
+        "<td>" + Evotti.esc(u.full_name || "—") + "</td>" +
+        "<td>" + Evotti.esc(u.email || "") + "</td>" +
+        "<td>" + personaSel + "</td>" +
+        "<td>" + dealerSel + "</td>" +
+        '<td style="text-align:right">' +
+        '<button class="btn sm save" data-id="' + u.id + '">Save</button> ' +
+        '<button class="btn sm danger del" data-id="' + u.id + '">Delete</button></td>' +
+        "</tr>";
+    }).join("");
+    $("users").innerHTML = head + "<tbody>" + body + "</tbody>";
+    wireRows();
+  }
+
+  function wireRows() {
+    Array.prototype.forEach.call(document.querySelectorAll(".row-persona"), function (sel) {
+      sel.onchange = function () {
+        var dealerSel = document.querySelector('.row-dealer[data-id="' + sel.getAttribute("data-id") + '"]');
+        if (dealerSel) dealerSel.hidden = +sel.value !== DEALER_PERSONA_ID;
+      };
+    });
+    Array.prototype.forEach.call(document.querySelectorAll(".save"), function (b) {
+      b.onclick = function () {
+        var id = b.getAttribute("data-id");
+        var personaId = +document.querySelector('.row-persona[data-id="' + id + '"]').value;
+        var dealerSel = document.querySelector('.row-dealer[data-id="' + id + '"]');
+        var dealerId = (!dealerSel.hidden && dealerSel.value) ? dealerSel.value : null;
+        b.textContent = "…"; b.disabled = true;
+        api({ action: "update", id: id, persona_id: personaId, dealer_id: dealerId })
+          .then(loadUsers).catch(function (e) { alert(e.message); b.textContent = "Save"; b.disabled = false; });
+      };
+    });
+    Array.prototype.forEach.call(document.querySelectorAll(".del"), function (b) {
+      b.onclick = function () {
+        if (!confirm("Delete this user?")) return;
+        api({ action: "delete", id: b.getAttribute("data-id") })
+          .then(loadUsers).catch(function (e) { alert(e.message); });
+      };
+    });
+  }
+
+  $("create").onsubmit = function (e) {
+    e.preventDefault();
+    var personaId = +$("c-persona").value;
+    var dealerId = (personaId === DEALER_PERSONA_ID && $("c-dealer").value) ? $("c-dealer").value : null;
+    var msg = $("c-msg"); msg.className = "formmsg"; msg.textContent = "Creating…";
+    $("c-go").disabled = true;
+    api({
+      action: "create",
+      email: $("c-email").value.trim(),
+      password: $("c-pass").value,
+      full_name: $("c-name").value.trim(),
+      persona_id: personaId,
+      dealer_id: dealerId
+    }).then(function () {
+      msg.className = "formmsg ok"; msg.textContent = "Created.";
+      $("c-name").value = ""; $("c-email").value = "";
+      $("c-go").disabled = false;
+      loadUsers();
+    }).catch(function (err) {
+      msg.className = "formmsg err"; msg.textContent = err.message;
+      $("c-go").disabled = false;
+    });
+  };
+
+  function api(payload) {
+    payload.token = TOKEN;
+    return fetch("/.netlify/functions/admin-users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    }).then(function (r) {
+      return r.json().then(function (data) {
+        if (!r.ok) throw new Error(data.error || ("HTTP " + r.status));
+        return data;
+      });
+    });
+  }
+</script>
+</body>
+</html>

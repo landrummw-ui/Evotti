@@ -3,8 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Evotti Apps</title>
-<meta name="description" content="Internal application platform for Evotti Boats.">
+<title>Dealer Portal — Evotti</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23a83435'/><text x='16' y='24' font-family='Segoe UI,Helvetica,Arial,sans-serif' font-size='21' font-weight='700' fill='%23ffffff' text-anchor='middle'>E</text></svg>">
 <link rel="stylesheet" href="/platform/platform.css">
@@ -12,10 +11,10 @@
 <body>
 
 <header class="appbar">
-  <a class="lockup" href="/">
+  <a class="lockup" href="/dealer/">
     <img src="/assets/evotti-logo-black.png" alt="Evotti">
     <span class="rule"></span>
-    <span class="sub">Apps</span>
+    <span class="sub">Dealer</span>
   </a>
   <span class="spacer"></span>
   <div id="user"></div>
@@ -24,47 +23,57 @@
 
 <div class="wrap">
   <section class="hero">
-    <p class="eyebrow">The Evolution Begins</p>
-    <h1>Every tool your team runs on, in one place.</h1>
-    <p id="hero-sub">&nbsp;</p>
+    <p class="eyebrow" id="dealer-region">Dealer Portal</p>
+    <h1 id="dealer-name">&nbsp;</h1>
+    <p id="dealer-sub">&nbsp;</p>
   </section>
 
   <main class="grid" id="tiles"></main>
 
-  <div class="foot">
-    <span>Evotti Apps &mdash; internal platform</span>
-    <span>Elkhart, Indiana</span>
-  </div>
+  <div class="foot"><span>Evotti Dealer Portal</span><span id="dealer-loc"></span></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/platform/config.js"></script>
 <script src="/platform/platform.js"></script>
 <script>
-  Evotti.gate({}).then(function (profile) {
+  // Dealers stay here; Leadership may preview. Everyone else goes home.
+  Evotti.gate({ allowDealerHere: true }).then(function (profile) {
     if (!profile) return;
+    var key = profile.persona && profile.persona.key;
+    var isDealer = profile.persona && profile.persona.is_dealer;
+    if (!isDealer && key !== "leadership") { location.href = "/"; return; }
+
     document.getElementById("user").innerHTML = Evotti.userMenu(profile);
     Evotti.wireUserMenu();
 
-    var first = ((profile.full_name || "").split(" ")[0]) || "";
-    document.getElementById("hero-sub").textContent =
-      (first ? "Welcome, " + first + ". " : "Welcome. ") +
-      "Here are the tools your role has access to.";
-
-    if (!profile.persona) {
-      document.getElementById("tiles").innerHTML =
-        '<p style="color:var(--muted)">No role assigned yet — ask an administrator to set your persona.</p>';
-      return;
+    var d = profile.dealer;
+    if (d) {
+      document.getElementById("dealer-region").textContent = (d.region || "Dealer") + " · Dealer Portal";
+      document.getElementById("dealer-name").textContent = d.name;
+      document.getElementById("dealer-sub").textContent =
+        "Your queue, builds in progress, and warranty activity — everything for " + d.name + ".";
+      document.getElementById("dealer-loc").textContent =
+        [d.city, d.state].filter(Boolean).join(", ");
+    } else {
+      document.getElementById("dealer-name").textContent = "Dealer Portal";
+      document.getElementById("dealer-sub").textContent =
+        key === "leadership" ? "Leadership preview of the dealer experience." :
+        "No dealer company linked to your account yet.";
     }
-    Evotti.tilesFor(profile.persona.id).then(renderTiles);
+
+    // Dealer home always shows the dealer persona's tiles.
+    Evotti.client.from("personas").select("id").eq("key", "dealer").single()
+      .then(function (r) {
+        var id = r.data ? r.data.id : (isDealer ? profile.persona.id : 4);
+        return Evotti.tilesFor(id);
+      })
+      .then(renderTiles);
   });
 
   function renderTiles(tiles) {
     var g = document.getElementById("tiles");
-    if (!tiles.length) {
-      g.innerHTML = '<p style="color:var(--muted)">No tiles assigned to your role yet.</p>';
-      return;
-    }
+    if (!tiles.length) { g.innerHTML = '<p style="color:var(--muted)">No tiles yet.</p>'; return; }
     g.innerHTML = tiles.map(function (t) {
       var live = t.status === "live";
       var inner =

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in — Evotti Apps</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23a83435'/><text x='16' y='24' font-family='Segoe UI,Helvetica,Arial,sans-serif' font-size='21' font-weight='700' fill='%23ffffff' text-anchor='middle'>E</text></svg>">
+<link rel="stylesheet" href="/platform/platform.css">
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <img src="/assets/evotti-logo-black.png" alt="Evotti"><span class="sub">Apps</span>
+    </div>
+    <h1>Sign in</h1>
+    <p class="lead">Evotti App platform</p>
+    <form id="f" autocomplete="on">
+      <label>Email<input id="email" type="email" autocomplete="username" required></label>
+      <label>Password<input id="password" type="password" autocomplete="current-password" required></label>
+      <button class="btn primary block" type="submit" id="go">Sign in</button>
+      <div class="formmsg" id="msg"></div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/platform/config.js"></script>
+<script src="/platform/platform.js"></script>
+<script>
+  function home(p) { return p && p.persona && p.persona.is_dealer ? "/dealer/" : "/"; }
+
+  // Already signed in? Skip the form.
+  Evotti.loadProfile().then(function (p) { if (p) location.href = home(p); });
+
+  document.getElementById("f").onsubmit = function (e) {
+    e.preventDefault();
+    var msg = document.getElementById("msg");
+    msg.className = "formmsg"; msg.textContent = "Signing in…";
+    document.getElementById("go").disabled = true;
+    Evotti.client.auth.signInWithPassword({
+      email: document.getElementById("email").value.trim(),
+      password: document.getElementById("password").value
+    }).then(function (r) {
+      if (r.error) {
+        msg.className = "formmsg err"; msg.textContent = r.error.message;
+        document.getElementById("go").disabled = false;
+        return;
+      }
+      return Evotti.loadProfile().then(function (p) { location.href = home(p); });
+    });
+  };
+</script>
+</body>
+</html>
