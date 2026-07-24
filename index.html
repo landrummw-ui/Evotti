@@ -18,17 +18,22 @@
     <span class="sub">Apps</span>
   </a>
   <span class="spacer"></span>
-  <div id="user"></div>
+  <div class="switcher">
+    <span class="lbl">Viewing as</span>
+    <span class="sw-group" id="switch"></span>
+    <span class="demo-badge">Demo</span>
+  </div>
 </header>
 <div class="appbar-line"></div>
 
 <div class="wrap">
   <section class="hero">
-    <p class="eyebrow">The Evolution Begins</p>
-    <h1>Every tool your team runs on, in one place.</h1>
-    <p id="hero-sub">&nbsp;</p>
+    <p class="eyebrow" id="eyebrow">The Evolution Begins</p>
+    <h1 id="title">Every tool your team runs on, in one place.</h1>
+    <p id="sub">&nbsp;</p>
   </section>
 
+  <div id="dealer-pick"></div>
   <main class="grid" id="tiles"></main>
 
   <div class="foot">
@@ -37,46 +42,98 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="/platform/config.js"></script>
-<script src="/platform/platform.js"></script>
 <script>
-  Evotti.gate({}).then(function (profile) {
-    if (!profile) return;
-    document.getElementById("user").innerHTML = Evotti.userMenu(profile);
-    Evotti.wireUserMenu();
+  // Self-contained demo of the persona-driven platform (no login required).
+  // Real access control gets wired up after the demo; this mirrors the model.
+  var TILES = {
+    crm:          { title: "Evotti CRM",         desc: "Track Boat Builder leads from first configuration through dealer assignment, quote, and delivered build.", href: "/crm/",   status: "live" },
+    sales:        { title: "Sales Analysis",     desc: "Daily actuals against plan by region and product line, with an agent that answers questions in plain English.", href: "/sales/", status: "live" },
+    dealer_portal:{ title: "Dealer Portal",      desc: "A dealer's queue, quoting tools, and shared visibility into build status.", href: "#", status: "planned" },
+    build:        { title: "Build Tracker",      desc: "Follow a hull from order through the floor to shipment, with dates dealers and buyers can rely on.", href: "#", status: "planned" },
+    warranty:     { title: "Warranty & Service", desc: "Log claims against a specific hull, route them to the dealer, and spot issues repeating across a series.", href: "#", status: "planned" },
+    pricing:      { title: "Options & Pricing",  desc: "One source of truth for configurations and price, feeding the Boat Builder and every dealer quote.", href: "#", status: "planned" }
+  };
 
-    var first = ((profile.full_name || "").split(" ")[0]) || "";
-    document.getElementById("hero-sub").textContent =
-      (first ? "Welcome, " + first + ". " : "Welcome. ") +
-      "Here are the tools your role has access to.";
+  var PERSONAS = [
+    { key: "leadership", name: "Leadership",          dealer: false, tiles: ["crm", "sales", "dealer_portal", "build", "warranty", "pricing"] },
+    { key: "sales",      name: "Sales",               dealer: false, tiles: ["crm", "sales", "dealer_portal", "pricing"] },
+    { key: "controller", name: "Controller",          dealer: false, tiles: ["sales", "build", "warranty", "pricing"] },
+    { key: "dealer",     name: "Dealer",              dealer: true,  tiles: ["build", "warranty", "pricing"] }
+  ];
 
-    if (!profile.persona) {
-      document.getElementById("tiles").innerHTML =
-        '<p style="color:var(--muted)">No role assigned yet — ask an administrator to set your persona.</p>';
-      return;
-    }
-    Evotti.tilesFor(profile.persona.id).then(renderTiles);
-  });
+  var DEALERS = [
+    { name: "Great Lakes Marine",  region: "Great Lakes", city: "Elkhart",    state: "IN" },
+    { name: "Harborline Boats",    region: "Southeast",   city: "Charleston", state: "SC" },
+    { name: "Gulf Coast Yachts",   region: "Gulf",        city: "Tampa",      state: "FL" },
+    { name: "Bay State Marine",    region: "Northeast",   city: "Newport",    state: "RI" },
+    { name: "Cascade Watersports", region: "West",        city: "Seattle",    state: "WA" }
+  ];
 
-  function renderTiles(tiles) {
-    var g = document.getElementById("tiles");
-    if (!tiles.length) {
-      g.innerHTML = '<p style="color:var(--muted)">No tiles assigned to your role yet.</p>';
-      return;
-    }
-    g.innerHTML = tiles.map(function (t) {
+  var current = "leadership", dealerIdx = 0;
+  var $ = function (id) { return document.getElementById(id); };
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+
+  function persona(key) {
+    for (var i = 0; i < PERSONAS.length; i++) if (PERSONAS[i].key === key) return PERSONAS[i];
+  }
+
+  function renderSwitch() {
+    $("switch").innerHTML = PERSONAS.map(function (p) {
+      return '<button class="sw-btn' + (p.key === current ? " active" : "") +
+        '" data-k="' + p.key + '">' + esc(p.name) + "</button>";
+    }).join("");
+    Array.prototype.forEach.call(document.querySelectorAll(".sw-btn"), function (b) {
+      b.onclick = function () { current = b.getAttribute("data-k"); render(); };
+    });
+  }
+
+  function render() {
+    renderSwitch();
+    var p = persona(current);
+    if (p.dealer) return renderDealer(p);
+
+    $("eyebrow").textContent = "The Evolution Begins";
+    $("title").textContent = "Every tool your team runs on, in one place.";
+    $("sub").textContent = "Viewing as " + p.name + " — here's what this role sees when they sign in.";
+    $("dealer-pick").innerHTML = "";
+    renderTiles(p.tiles);
+  }
+
+  function renderDealer(p) {
+    var d = DEALERS[dealerIdx];
+    $("eyebrow").textContent = d.region + " · Dealer Portal";
+    $("title").textContent = d.name;
+    $("sub").textContent = "What a dealer sees when they log in — their queue, builds in progress, and warranty activity for " + d.name + ".";
+    $("dealer-pick").innerHTML =
+      '<div class="dealer-pick">Dealer <select id="dsel">' +
+      DEALERS.map(function (dd, i) {
+        return '<option value="' + i + '"' + (i === dealerIdx ? " selected" : "") + ">" +
+          esc(dd.name + " · " + dd.region) + "</option>";
+      }).join("") + "</select></div>";
+    $("dsel").onchange = function () { dealerIdx = +this.value; render(); };
+    renderTiles(p.tiles);
+  }
+
+  function renderTiles(keys) {
+    $("tiles").innerHTML = keys.map(function (k) {
+      var t = TILES[k]; if (!t) return "";
       var live = t.status === "live";
       var inner =
-        "<h2>" + Evotti.esc(t.title) + "</h2>" +
-        "<p>" + Evotti.esc(t.description || "") + "</p>" +
+        "<h2>" + esc(t.title) + "</h2><p>" + esc(t.desc) + "</p>" +
         '<footer><span class="dot"></span> ' + (live ? "Live" : "Planned") +
         (live ? '<span class="arrow">&rarr;</span>' : "") + "</footer>";
       return live
-        ? '<a class="tile live" href="/' + Evotti.esc(t.href) + '">' + inner + "</a>"
+        ? '<a class="tile live" href="' + t.href + '">' + inner + "</a>"
         : '<div class="tile soon">' + inner + "</div>";
     }).join("");
   }
+
+  render();
 </script>
 </body>
 </html>

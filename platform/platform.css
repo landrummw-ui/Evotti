@@ -48,6 +48,32 @@ a { color: inherit; }
 }
 .appbar .spacer { margin-left: auto; }
 
+/* Demo persona switcher */
+.switcher { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.switcher .lbl {
+  font-size: 11px; letter-spacing: 0.13em; text-transform: uppercase; color: var(--faint);
+}
+.sw-group {
+  display: inline-flex; background: var(--surface);
+  border: 1px solid var(--border-hi); border-radius: 999px; padding: 3px;
+}
+.sw-btn {
+  font: inherit; font-size: 13px; cursor: pointer; border: none; background: none;
+  color: var(--muted); padding: 6px 14px; border-radius: 999px;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+.sw-btn:hover { color: var(--text); }
+.sw-btn.active { background: var(--accent-deep); color: #fff; }
+.demo-badge {
+  font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--faint);
+  border: 1px solid var(--border); border-radius: 999px; padding: 5px 11px; white-space: nowrap;
+}
+.dealer-pick {
+  display: inline-flex; align-items: center; gap: 8px; margin-bottom: 22px;
+  font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--faint);
+}
+.dealer-pick select { width: auto; text-transform: none; letter-spacing: normal; font-size: 14px; padding: 8px 12px; }
+
 .usermenu { display: flex; align-items: center; gap: 14px; }
 .um-id { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.25; }
 .um-name { font-size: 13px; font-weight: 600; }
