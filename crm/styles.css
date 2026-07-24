@@ -1,19 +1,19 @@
 /* =============================================================================
    Evotti CRM
    Brand tokens match the EvottiApps shell — crimson sampled from the swoosh
-   in the Evotti logo (#6b2d2e -> #a83435), lightened for text on near-black.
+   in the Evotti logo (#6b2d2e -> #a83435), at full depth for text on light.
    ============================================================================= */
 
 :root {
-  --bg: #0b0b0d;
-  --surface: #141518;
-  --surface-hi: #1c1e22;
-  --border: #26282e;
-  --border-hi: #3a3d45;
-  --text: #f4f5f7;
-  --muted: #8b8e97;
-  --faint: #5c5f68;
-  --accent: #d2565a;
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --surface-hi: #eef0f3;
+  --border: #e2e4ea;
+  --border-hi: #cbced6;
+  --text: #16181c;
+  --muted: #5c616b;
+  --faint: #9297a1;
+  --accent: #a83435;
   --accent-deep: #8e3332;
   --radius: 12px;
 }
@@ -42,7 +42,7 @@ a { color: inherit; }
   align-items: center;
   gap: 32px;
   padding: 14px 28px;
-  background: rgba(11, 11, 13, 0.92);
+  background: rgba(245, 246, 248, 0.85);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
 }
@@ -299,7 +299,7 @@ a.row:hover { background: var(--surface-hi); }
   position: fixed;
   inset: 0;
   z-index: 60;
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(22, 24, 28, 0.45);
   backdrop-filter: blur(3px);
   display: grid;
   place-items: center;
@@ -363,7 +363,7 @@ select option { background: var(--surface); }
   border-radius: 10px;
   padding: 11px 19px;
   font-size: 14px;
-  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 10px 34px rgba(22, 24, 28, 0.18);
 }
 
 .toast.err { border-color: var(--accent); color: var(--accent); }
