@@ -35,28 +35,26 @@
 
   <div id="dealer-pick"></div>
 
-  <section class="card hcard">
-    <div class="card-head">
-      <div class="hicon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 4l9 6.5"/><path d="M5 9.5V20h14V9.5"/><path d="M9.5 20v-5h5v5"/></svg>
-      </div>
-      <div>
-        <h2>Huntington Floor Plan — Payoffs &amp; Balance</h2>
-        <p class="cap" id="hcap">&nbsp;</p>
-      </div>
-    </div>
-
-    <div class="kpis" id="kpis"></div>
-    <div class="filters" id="filters"></div>
-    <div class="tbl-wrap"><table class="tbl htbl" id="htable"></table></div>
-  </section>
+  <div class="dash-grid" id="grid"></div>
 
   <div class="foot">
     <span>Evotti Apps &mdash; daily briefing</span>
-    <span>Floor-plan financing · Huntington National Bank</span>
+    <span>Your dashboard composes itself from the components your role needs.</span>
   </div>
 </div>
 
+<div class="modal-backdrop" id="modal" hidden>
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="modal-title"></h2>
+      <span class="spacer"></span>
+      <button class="btn sm" id="modal-close">Close</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script src="/sales/data.js"></script>
 <script src="huntington-data.js"></script>
 <script src="app.js"></script>
 </body>
