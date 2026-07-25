@@ -1,0 +1,35 @@
+/* InfoLink market-intel page — reuses ../sales/styles.css, retinted to the
+   teal of the Retail Registration Data tile, with a spotlight + leaderboard. */
+
+:root {
+  --accent: #2f7d8f;
+  --accent-deep: #266576;
+  --pos: #2f7d8f;
+  --neg: #6b7280;
+}
+
+/* Evotti spotlight card — the "we just entered the market" story up top. */
+.spotlight {
+  border-left: 4px solid var(--accent);
+  background: linear-gradient(180deg, #f3fafb 0%, var(--surface) 60%);
+}
+.spotlight .sl-head {
+  display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px;
+}
+.spotlight .sl-head h2 { margin: 0; font-size: 16px; }
+.spotlight .sl-tag {
+  font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  color: #fff; background: var(--accent); padding: 3px 8px; border-radius: 999px;
+}
+.spotlight .sl-figs { display: flex; flex-wrap: wrap; gap: 26px; }
+.spotlight .sl-fig .v { font-size: 26px; font-weight: 700; color: var(--text); line-height: 1.1; }
+.spotlight .sl-fig .l { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.spotlight .sl-note { margin: 12px 0 0; color: var(--muted); font-size: 13px; }
+
+/* Leaderboard: highlight the Evotti row so the eye finds it instantly. */
+#board tr.me td { background: #eaf5f7; font-weight: 600; }
+#board td.rank { color: var(--faint); font-variant-numeric: tabular-nums; width: 40px; }
+#board td.num { text-align: right; font-variant-numeric: tabular-nums; }
+#board .delta.up { color: var(--accent); }
+#board .delta.down { color: var(--neg); }
+#board .mk { font-weight: 600; }

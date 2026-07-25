@@ -18,12 +18,13 @@ Lead with **platform**, not features. The tiles, the personas, the shared data, 
 
 ## Pre-demo checklist (do before Monday)
 
-- [ ] **Anthropic key live.** Set `ANTHROPIC_API_KEY` in Netlify → add `ANTHROPIC_MODEL=claude-haiku-4-5` → **redeploy**. (Without this, the sales agent runs on the keyword fallback — fine, but real Claude handles any phrasing.)
+- [ ] **Anthropic key live.** Set `ANTHROPIC_API_KEY` in Netlify → add `ANTHROPIC_MODEL=claude-haiku-4-5` → **redeploy**. One key powers **both** agents (Sales Analysis and the InfoLink market agent). (Without it, both run the keyword fallback — fine, but real Claude handles any phrasing.)
 - [ ] **Kanban seeded.** Confirm `supabase/dev_schema.sql` has been run once in Supabase (board loads with cards, not the "setup needed" notice).
 - [ ] **Voice app on your phone.** Open `…/voice/` → Add to Home Screen. This is your pocket ace — best on Android for live voice; iPhone use the typed fallback.
 - [ ] **Smoke test, in order:**
   - [ ] Launcher: switch personas (Leadership → Sales → Controller → Dealer), tiles change per role
   - [ ] Sales Analysis: ask a free-form question, confirm it answers with real numbers + a branded chart
+  - [ ] InfoLink: open the tile, confirm the Evotti spotlight + leaderboard load; ask "who's gaining share?" and get an answer + chart
   - [ ] Kanban: board loads, drag a card, it sticks on reload
   - [ ] Voice: "How were sales yesterday?" → it speaks back
 - [ ] **Canned questions ready** (in case the room goes quiet — see below).
@@ -35,8 +36,9 @@ Lead with **platform**, not features. The tiles, the personas, the shared data, 
 1. **Open on the launcher.** Point out the "Viewing as" switcher. Flip through personas — *"users log in, they don't pick a persona; the persona is attached to their user record. Sales sees these tiles, the Controller sees those, a dealer lands on their own page."* This sells the platform + access-control story in 15 seconds.
 2. **Sales Analysis — the standard reporting.** Show the dashboard: daily actuals vs plan, region × product line, the quarterly slicer, filter pills, maximize a tile. *"Everything a normal BI tool does."*
 3. **Sales Analysis — the agent (the "wow").** Type a plain-English question. Emphasize: *"The model interprets the question; the numbers are computed by the same deterministic engine as the dashboard — so the answer is always exact, never made up."*
-4. **The Kanban** (AI App & Agent Development). *"This is how we run the pipeline of what gets built next — request to go-live, with SLAs."* Ties into the feedback vision below.
-5. **"One more thing" — voice.** Pull out your phone, tap the tile, ask a question out loud, let it talk back. Don't over-explain; let it land.
+4. **InfoLink — the agent on data we don't own.** Open the Retail Registration tile. Land on the Evotti spotlight (*"we just entered pontoons"*), then ask the market agent *"who's gaining share the fastest?"* Point out this is a **report we receive from InfoLink** — same agent capability, pointed at competitive intelligence. Bridge to the data-platform idea: *"any report we receive can land here and get this treatment."*
+5. **The Kanban** (AI App & Agent Development). *"This is how we run the pipeline of what gets built next — request to go-live, with SLAs."* Ties into the feedback vision below.
+6. **"One more thing" — voice.** Pull out your phone, tap the tile, ask a question out loud, let it talk back. Don't over-explain; let it land.
 
 ---
 
@@ -52,6 +54,13 @@ Lead with **platform**, not features. The tiles, the personas, the shared data, 
 - Standard reporting **plus** a natural-language agent — ask in plain English, get the answer and the chart.
 - **Exact by construction:** the agent picks *what* to compute; deterministic code does the math. No hallucinated numbers.
 - Branded to Evotti (crimson/charcoal), with a key on every chart.
+
+### Retail Registration Data / InfoLink (competitive intelligence)
+- **A report Evotti *receives*** — the InfoLink industry feed of new pontoon retail registrations and market share by manufacturer, five trailing-12-month periods (May '22 → '26). It's inbound source data, not something the platform generates.
+- The dashboard leads with the **Evotti spotlight**: we just *entered* the pontoon market (0 → 281 registrations, 0.60% share, rank #24 of 52) — in a market that's shrinking (63.2K → 46.9K). Then a share-trend chart of the top makes and a full manufacturer leaderboard (Evotti pinned).
+- **A second agent, on someone else's data.** "Ask the market" answers competitive questions — *"Who's gaining share fastest?"* (Sea Doo, +5.6pts; Barletta, +2.9), *"How is Evotti doing?"*, *"Is the market growing?"* — same exact-by-construction pattern: the model narrates, the numbers are computed.
+- **Framing:** *"This is a report we buy from InfoLink. We land it in the platform, and the same agent capability reads it — so competitive intelligence gets the plain-English treatment too, not just our own sales."*
+- **Ties to the data platform:** received feeds like this are exactly what the Unified Data Platform ingests — an external source, landed once, read by the dashboards and the agent. (See UDP section.)
 
 ### Voice (pocket demo)
 - Same agent, hands-free, on a phone home-screen tile. Ask → hear a punchy answer → see it on screen.

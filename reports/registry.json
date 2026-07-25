@@ -1,0 +1,21 @@
+{
+  "description": "Catalog of external reports Evotti receives from third-party sources (data feeds and subscriptions) and lands here for the platform to read and the agent to analyze. These are inbound source reports — not reports the platform generates.",
+  "reports": [
+    {
+      "id": "infolink-pontoon-ttm",
+      "title": "InfoLink Retail Registrations — Pontoon (TTM)",
+      "domain": "market-intelligence",
+      "kind": "received",
+      "source": "InfoLink (Info-Link Technologies)",
+      "provider_type": "third-party subscription",
+      "cadence": "monthly (rolling 12-month periods)",
+      "received": "2026-07-25",
+      "description": "New pontoon retail registrations and market share by manufacturer, over five trailing-12-month periods ending May 2022–2026.",
+      "data": "reports/infolink-pontoon-ttm.json",
+      "workbook": "reports/infolink-marine-report.xlsx",
+      "grain": "make x trailing-12-month period",
+      "measures": ["units", "market_share"],
+      "surface": "/infolink/"
+    }
+  ]
+}
