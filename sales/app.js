@@ -339,6 +339,7 @@
     function submitAsk() {
       if (!$("ask").value.trim()) return;
       ask($("ask").value);
+      $("ask").value = "";
       closeAsk();
     }
     $("ask-go").onclick = submitAsk;
@@ -359,6 +360,7 @@
     });
     $("ask-drawer").setAttribute("aria-hidden", "false");
     $("ask-open").setAttribute("aria-expanded", "true");
+    $("ask").value = "";
     setTimeout(function () { $("ask").focus(); }, 180);
   }
 
