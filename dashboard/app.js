@@ -33,7 +33,12 @@
     DEALERS.sort(); MODELS.sort();
   })();
 
-  var PERSONAS = [{ key: "leadership", name: "Leadership" }, { key: "dealer", name: "Dealer" }];
+  var PERSONAS = [
+    { key: "leadership", name: "Leadership" },
+    { key: "sales", name: "Sales" },
+    { key: "controller", name: "Controller" },
+    { key: "dealer", name: "Dealer" }
+  ];
   var persona = "leadership", dealerIdx = 0;
   var dealerFilter = "all", modelFilter = "all";   // detail-modal state
 
@@ -154,11 +159,57 @@
           '<p class="ph-note">Sample figures — connects to the warranty app.</p>';
       },
       detail: null
+    },
+
+    sales_mtd: {
+      title: "Sales vs Plan · Month to Date", color: "#17786b", badge: "live", span: "full",
+      icon: SVG('<path d="M4 19V5"/><path d="M4 19h16"/><path d="M7.5 14l3.2-3.6 3 2.4L20 7"/>'),
+      summary: function (el) {
+        if (!SALES) { el.innerHTML = '<p class="ph-note">Sales data unavailable.</p>'; return; }
+        var a = mtdAgg();
+        var vpr = a.rf ? (a.ra - a.rf) / a.rf * 100 : 0;
+        var vpu = a.uf ? (a.ua - a.uf) / a.uf * 100 : 0;
+        el.innerHTML = statTiles([
+          ["Revenue · MTD", money(a.ra), pct(vpr) + " vs plan", vpr >= 0 ? "green" : "amber"],
+          ["Boats delivered · MTD", String(a.ua), pct(vpu) + " vs plan (" + Math.round(a.uf) + ")", vpu >= 0 ? "green" : "amber"]
+        ]);
+      },
+      detail: SALES ? { title: "Sales vs plan by region · month to date", render: renderMtdDetail } : null
+    },
+
+    pipeline: {
+      title: "Pipeline & Leads", color: "#a83435", badge: "sample", span: "half",
+      icon: SVG('<circle cx="9" cy="8" r="3.2"/><path d="M3.6 19.5a5.4 5.4 0 0 1 10.8 0"/><path d="M15.5 5.4a3.2 3.2 0 0 1 0 5.9"/><path d="M17.8 19.5a5.4 5.4 0 0 0-2.3-4.4"/>'),
+      summary: function (el) {
+        el.innerHTML =
+          statTiles([
+            ["Open leads", "34", "8 hot", ""],
+            ["Configurator sessions", "128", "+12% wk/wk", ""]
+          ]) +
+          '<p class="ph-note">Sample figures — connects to the CRM &amp; Boat Builder.</p>';
+      },
+      detail: null
+    },
+
+    cash_position: {
+      title: "Cash Position", color: "#3f7d54", badge: "sample", span: "half",
+      icon: SVG('<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.4"/><path d="M6 9v6M18 9v6"/>'),
+      summary: function (el) {
+        el.innerHTML =
+          statTiles([
+            ["Operating cash", "$4.2M", "across 3 accounts", ""],
+            ["AP due · 7 days", "$1.1M", "12 invoices", "amber"]
+          ]) +
+          '<p class="ph-note">Sample figures — connects to the GL &amp; bank feeds.</p>';
+      },
+      detail: null
     }
   };
 
   var LAYOUT = {
     leadership: ["huntington", "yesterday_sales", "production"],
+    sales: ["sales_mtd", "yesterday_sales", "pipeline"],
+    controller: ["huntington", "yesterday_sales", "cash_position"],
     dealer: ["huntington", "inventory_aging", "open_claims"]
   };
 
@@ -202,6 +253,36 @@
       }).join("") + "</tbody></table></div>";
   }
 
+  // ---- Sales · month-to-date (real, from the sales app data) --------------
+  function mtdAgg() {
+    var mo = SALES.asOf.slice(0, 7), a = { ra: 0, rf: 0, ua: 0, uf: 0 };
+    SALES.rows.forEach(function (r) {
+      if (r.sale_date.slice(0, 7) === mo) { a.ra += r.revenue_actual; a.rf += r.revenue_forecast; a.ua += r.units_actual; a.uf += r.units_forecast; }
+    });
+    return a;
+  }
+  function renderMtdDetail(el) {
+    var mo = SALES.asOf.slice(0, 7), g = {};
+    SALES.rows.forEach(function (r) {
+      if (r.sale_date.slice(0, 7) === mo) {
+        var x = g[r.region] || (g[r.region] = { ra: 0, rf: 0, ua: 0 });
+        x.ra += r.revenue_actual; x.rf += r.revenue_forecast; x.ua += r.units_actual;
+      }
+    });
+    var rows = Object.keys(g).map(function (k) { return { region: k, x: g[k] }; })
+      .sort(function (a, b) { return b.x.ra - a.x.ra; });
+    el.innerHTML =
+      '<p class="cap dc-scope">Company-wide · ' + monthName(mo) + ' MTD</p>' +
+      '<div class="tbl-wrap"><table class="tbl htbl"><thead><tr><th>Region</th>' +
+      "<th class='num'>Revenue</th><th class='num'>Plan</th><th class='num'>Var</th><th class='num'>Boats</th></tr></thead><tbody>" +
+      rows.map(function (o) {
+        var vp = o.x.rf ? (o.x.ra - o.x.rf) / o.x.rf * 100 : 0;
+        return "<tr><td>" + esc(o.region) + "</td><td class='num'>" + money(o.x.ra) + "</td>" +
+          "<td class='num'>" + money(o.x.rf) + "</td><td class='num " + (vp >= 0 ? "up" : "down") + "'>" + pct(vp) + "</td>" +
+          "<td class='num'>" + o.x.ua + "</td></tr>";
+      }).join("") + "</tbody></table></div>";
+  }
+
   // ---- Huntington detail report (filterable + drill) ----------------------
   function detailScoped() {
     var us = persona === "dealer"
@@ -211,7 +292,7 @@
     return us;
   }
   function renderHuntingtonDetail(el) {
-    var showByDealer = (persona === "leadership" && dealerFilter === "all");
+    var showByDealer = (persona !== "dealer" && dealerFilter === "all");
     var us = detailScoped();
     var m = huntMetrics(us);
     var scopeName = persona === "dealer" ? DEALERS[dealerIdx] : (dealerFilter !== "all" ? dealerFilter : null);
@@ -236,7 +317,7 @@
   function renderDetailFilters(el) {
     var box = $("dfilters"); if (!box) return;
     var html = "";
-    if (persona === "leadership") {
+    if (persona !== "dealer") {
       html += '<span class="flabel">Dealer</span><select id="d-dealer"><option value="all">All dealers</option>' +
         DEALERS.map(function (dn) { return '<option value="' + esc(dn) + '"' + (dealerFilter === dn ? " selected" : "") + ">" + esc(dn) + "</option>"; }).join("") + "</select>";
     }
@@ -320,8 +401,13 @@
         }).join("") + "</select></div>";
       $("dsel").onchange = function () { dealerIdx = +this.value; render(); };
     } else {
-      $("eyebrow").textContent = "Leadership · whole business at a glance";
       $("dealer-pick").innerHTML = "";
+      var eb = {
+        leadership: "Leadership · whole business at a glance",
+        sales: "Sales · today's numbers",
+        controller: "Controller · financial position"
+      };
+      $("eyebrow").textContent = eb[persona] || "";
     }
 
     renderGrid();
