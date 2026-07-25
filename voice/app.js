@@ -25,7 +25,7 @@
   var EXAMPLES = [
     "How were sales yesterday?",
     "Give me the regional breakdown",
-    "How's the West doing versus plan?",
+    "How's Payne doing versus plan?",
     "Units this month",
     "Revenue by product line",
     "How was Q2?"

@@ -32,8 +32,8 @@
   var MON3 = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep",
     "Oct", "Nov", "Dec"];
 
-  var REGIONS = ["Great Lakes", "Southeast", "Gulf", "Northeast", "West"];
-  var LINES = ["190 Sport", "240 Series", "280 Cruiser", "320 Flagship"];
+  var REGIONS = ["Payne", "Good", "Girten", "Wyland", "Robinson", "Cooper", "Canada"];
+  var LINES = ["400", "500", "700", "900"];
 
   // ---- formatting ----------------------------------------------------------
 
@@ -194,20 +194,15 @@
       ? "units" : "revenue";
 
     var filters = {};
+    // Regions are single words (sales territories); match on word boundaries.
     var regions = REGIONS.filter(function (r) {
-      return q.indexOf(r.toLowerCase()) >= 0 ||
-        (r === "Great Lakes" && /\bgreat lakes\b/.test(q));
+      return new RegExp("\\b" + r.toLowerCase() + "\\b").test(q);
     });
     if (regions.length) filters.regions = regions;
 
-    var lines = [];
-    LINES.forEach(function (l) {
-      var num = l.split(" ")[0].toLowerCase();          // "190","240",...
-      var word = l.split(" ")[1].toLowerCase();          // "sport","series",...
-      if (q.indexOf(l.toLowerCase()) >= 0 || q.indexOf(num) >= 0 ||
-          (word === "cruiser" && q.indexOf("cruiser") >= 0) ||
-          (word === "sport" && q.indexOf("sport") >= 0) ||
-          (l === "320 Flagship" && q.indexOf("flagship") >= 0)) lines.push(l);
+    // Product lines are model numbers ("400", "500", ...); match the number.
+    var lines = LINES.filter(function (l) {
+      return new RegExp("\\b" + l + "\\b").test(q);
     });
     if (lines.length) filters.product_lines = lines;
 

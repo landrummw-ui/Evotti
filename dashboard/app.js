@@ -140,7 +140,7 @@
         el.innerHTML =
           statTiles([
             ["Units &gt; 120 days", "3", "approaching curtailment", "amber"],
-            ["Oldest unit", "168 days", "320 Flagship", ""]
+            ["Oldest unit", "168 days", "900 flagship", ""]
           ]) +
           '<p class="ph-note">Sample figures — the aging &amp; curtailment view lands next.</p>';
       },

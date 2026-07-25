@@ -1,9 +1,9 @@
 -- =============================================================================
 -- Evotti Sales Analysis — schema
 -- =============================================================================
--- One table: sales_daily. Grain is one row per workday x region x product line,
--- carrying actual and forecast for both units and revenue so variance is
--- computable at any level of aggregation.
+-- One table: sales_daily. Grain is one row per workday x dealer x product line
+-- (dealers roll up to regions/territories), carrying actual and forecast for
+-- both units and revenue so variance is computable at any level of aggregation.
 --
 -- Run this once in the Supabase SQL Editor, then load supabase/sales_seed.sql.
 -- Safe to re-run: it drops and recreates the table.
@@ -15,6 +15,7 @@ create table public.sales_daily (
   id                bigint generated always as identity primary key,
 
   sale_date         date not null,
+  dealer            text not null,
   region            text not null,
   product_line      text not null,
 
@@ -26,12 +27,13 @@ create table public.sales_daily (
   revenue_actual    numeric(12,2) not null default 0,
   revenue_forecast  numeric(12,2) not null default 0,
 
-  -- One row per date/region/line — lets the seed upsert cleanly.
-  unique (sale_date, region, product_line)
+  -- One row per date/dealer/line — lets the seed upsert cleanly.
+  unique (sale_date, dealer, product_line)
 );
 
 -- The dashboard and the agent both filter and group on these.
 create index sales_daily_date_idx   on public.sales_daily (sale_date);
+create index sales_daily_dealer_idx on public.sales_daily (dealer);
 create index sales_daily_region_idx on public.sales_daily (region);
 create index sales_daily_line_idx   on public.sales_daily (product_line);
 

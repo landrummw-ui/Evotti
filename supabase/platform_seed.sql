@@ -16,18 +16,22 @@ on conflict (id) do update set
   key = excluded.key, name = excluded.name, description = excluded.description,
   is_dealer = excluded.is_dealer, sort = excluded.sort;
 
--- dealers (two per Sales Analysis region) --------------------------------------
+-- dealers (two per Sales Analysis territory) -----------------------------------
 insert into public.dealers (name, city, state, region) values
-  ('Great Lakes Marine',   'Elkhart',       'IN', 'Great Lakes'),
-  ('Northwind Boatworks',  'Traverse City', 'MI', 'Great Lakes'),
-  ('Harborline Boats',     'Charleston',    'SC', 'Southeast'),
-  ('Palmetto Marine',      'Savannah',      'GA', 'Southeast'),
-  ('Gulf Coast Yachts',    'Tampa',         'FL', 'Gulf'),
-  ('Bayou Marine Group',   'New Orleans',   'LA', 'Gulf'),
-  ('Bay State Marine',     'Newport',       'RI', 'Northeast'),
-  ('Cape & Isles Boats',   'Portland',      'ME', 'Northeast'),
-  ('Cascade Watersports',  'Seattle',       'WA', 'West'),
-  ('Pacific Edge Marine',  'Portland',      'OR', 'West');
+  ('Great Lakes Marine',   'Elkhart',       'IN', 'Payne'),
+  ('Northwind Boatworks',  'Traverse City', 'MI', 'Payne'),
+  ('Harborline Boats',     'Charleston',    'SC', 'Good'),
+  ('Palmetto Marine',      'Savannah',      'GA', 'Good'),
+  ('Gulf Coast Yachts',    'Tampa',         'FL', 'Girten'),
+  ('Bayou Marine Group',   'New Orleans',   'LA', 'Girten'),
+  ('Bay State Marine',     'Newport',       'RI', 'Wyland'),
+  ('Cape & Isles Boats',   'Portland',      'ME', 'Wyland'),
+  ('Cascade Watersports',  'Seattle',       'WA', 'Robinson'),
+  ('Pacific Edge Marine',  'Portland',      'OR', 'Robinson'),
+  ('Summit Marine',        'Denver',        'CO', 'Cooper'),
+  ('Riverbend Boats',      'Nashville',     'TN', 'Cooper'),
+  ('Anchor Bay Marine',    'Toronto',       'ON', 'Canada'),
+  ('Maple Leaf Marine',    'Vancouver',     'BC', 'Canada');
 
 -- tiles (the app catalog) ------------------------------------------------------
 insert into public.tiles (id, key, title, description, href, status, sort) values

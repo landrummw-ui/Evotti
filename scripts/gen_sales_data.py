@@ -36,22 +36,26 @@ SEED = 20260724
 START = date(2026, 2, 2)
 END = date(2026, 7, 24)  # inclusive; matches the demo "today"
 
-# Region -> demand weight (Elkhart's home water leads), price factor (freight /
-# coastal premium nudges a few regions up a hair).
+# Region (sales territory) -> demand weight, price factor (a small freight /
+# cross-border premium nudges a couple up a hair). Weights sum to ~5.0 so the
+# company-wide totals stay in the same ballpark as the prior five-region model.
 REGIONS = {
-    "Great Lakes": (1.25, 1.00),
-    "Southeast":   (1.10, 1.00),
-    "Gulf":        (0.95, 0.99),
-    "Northeast":   (0.85, 1.03),
-    "West":        (0.85, 1.04),
+    "Payne":    (0.95, 1.00),
+    "Good":     (0.85, 1.00),
+    "Girten":   (0.75, 0.99),
+    "Wyland":   (0.70, 1.02),
+    "Robinson": (0.65, 1.03),
+    "Cooper":   (0.60, 1.01),
+    "Canada":   (0.50, 1.05),
 }
 
-# Product line -> demand weight, average selling price ($).
+# Product line (model number) -> demand weight, average selling price ($).
+# Bigger number = bigger boat = higher price (400 entry ... 900 flagship).
 LINES = {
-    "190 Sport":    (1.00,  72000),
-    "240 Series":   (0.95,  98000),
-    "280 Cruiser":  (0.55, 135000),
-    "320 Flagship": (0.28, 210000),
+    "400": (1.00,  72000),
+    "500": (0.95,  98000),
+    "700": (0.55, 135000),
+    "900": (0.28, 210000),
 }
 
 # Overall scale: tuned so shoulder-season runs ~6 boats/workday company-wide and
@@ -73,15 +77,18 @@ MONTH_BIAS = {
 PLAN_UPLIFT = 0.03
 
 
-# Region -> its dealers, as (name, base share of the region's volume). Shares
-# per region sum to 1, so splitting each region cell across its dealers leaves
-# every region / product-line / month total unchanged. Two per region -> 10.
+# Region (territory) -> its dealers, as (name, base share of the region's
+# volume). Shares per region sum to 1, so splitting each region cell across its
+# dealers leaves every region / product-line / month total unchanged. Two per
+# region -> 14.
 DEALERS = {
-    "Great Lakes": [("Great Lakes Marine", 0.58), ("Northwind Boatworks", 0.42)],
-    "Southeast":   [("Harborline Boats", 0.55), ("Palmetto Marine", 0.45)],
-    "Gulf":        [("Gulf Coast Yachts", 0.52), ("Bayou Marine Group", 0.48)],
-    "Northeast":   [("Bay State Marine", 0.57), ("Cape & Isles Boats", 0.43)],
-    "West":        [("Cascade Watersports", 0.54), ("Pacific Edge Marine", 0.46)],
+    "Payne":    [("Great Lakes Marine", 0.58), ("Northwind Boatworks", 0.42)],
+    "Good":     [("Harborline Boats", 0.55), ("Palmetto Marine", 0.45)],
+    "Girten":   [("Gulf Coast Yachts", 0.52), ("Bayou Marine Group", 0.48)],
+    "Wyland":   [("Bay State Marine", 0.57), ("Cape & Isles Boats", 0.43)],
+    "Robinson": [("Cascade Watersports", 0.54), ("Pacific Edge Marine", 0.46)],
+    "Cooper":   [("Summit Marine", 0.56), ("Riverbend Boats", 0.44)],
+    "Canada":   [("Anchor Bay Marine", 0.53), ("Maple Leaf Marine", 0.47)],
 }
 
 

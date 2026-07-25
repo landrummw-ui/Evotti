@@ -10,7 +10,7 @@ or fees. Each record is one boat (one HIN) that a dealer floored with Huntington
   - status "paid_off"  -> boat retailed; the dealer paid Huntington the advance
                           (payoff_amount == huntington_advance; interest ignored).
 
-Grain: one row per unit (HIN). Dealers match the sales data (10, two per region).
+Grain: one row per unit (HIN). Dealers match the sales data (14, two per region).
 
 Output:
   dashboard/huntington-data.js   -- window.EVOTTI_HUNTINGTON = {asOf, units:[...]}
@@ -29,24 +29,28 @@ AS_OF = date(2026, 7, 24)
 
 # Dealer -> region (matches scripts/gen_sales_data.py and the launcher).
 DEALERS = [
-    ("Great Lakes Marine", "Great Lakes"),
-    ("Northwind Boatworks", "Great Lakes"),
-    ("Harborline Boats", "Southeast"),
-    ("Palmetto Marine", "Southeast"),
-    ("Gulf Coast Yachts", "Gulf"),
-    ("Bayou Marine Group", "Gulf"),
-    ("Bay State Marine", "Northeast"),
-    ("Cape & Isles Boats", "Northeast"),
-    ("Cascade Watersports", "West"),
-    ("Pacific Edge Marine", "West"),
+    ("Great Lakes Marine", "Payne"),
+    ("Northwind Boatworks", "Payne"),
+    ("Harborline Boats", "Good"),
+    ("Palmetto Marine", "Good"),
+    ("Gulf Coast Yachts", "Girten"),
+    ("Bayou Marine Group", "Girten"),
+    ("Bay State Marine", "Wyland"),
+    ("Cape & Isles Boats", "Wyland"),
+    ("Cascade Watersports", "Robinson"),
+    ("Pacific Edge Marine", "Robinson"),
+    ("Summit Marine", "Cooper"),
+    ("Riverbend Boats", "Cooper"),
+    ("Anchor Bay Marine", "Canada"),
+    ("Maple Leaf Marine", "Canada"),
 ]
 
-# Model -> (average retail price, demand weight, 2-letter HIN code).
+# Model -> (average retail price, demand weight, 2-char HIN code).
 MODELS = [
-    ("190 Sport",    72000, 1.00, "SP"),
-    ("240 Series",   98000, 0.95, "SE"),
-    ("280 Cruiser", 135000, 0.55, "CR"),
-    ("320 Flagship", 210000, 0.28, "FL"),
+    ("400", 72000, 1.00, "40"),
+    ("500", 98000, 0.95, "50"),
+    ("700", 135000, 0.55, "70"),
+    ("900", 210000, 0.28, "90"),
 ]
 
 WHOLESALE = 0.82   # Huntington advance as a share of retail (dealer cost)
