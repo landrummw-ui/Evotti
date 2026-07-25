@@ -333,8 +333,41 @@
   function wireAgent() {
     renderGuide(TREE.start, true);
     $("guide-reset").onclick = function () { renderGuide(TREE.start, true); };
-    $("ask-go").onclick = function () { ask($("ask").value); };
-    $("ask").addEventListener("keydown", function (e) { if (e.key === "Enter") ask($("ask").value); });
+
+    // Typing a question and submitting collapses the drawer so the answer shows;
+    // guided drill-down (askNode) leaves it open so you can keep clicking.
+    function submitAsk() {
+      if (!$("ask").value.trim()) return;
+      ask($("ask").value);
+      closeAsk();
+    }
+    $("ask-go").onclick = submitAsk;
+    $("ask").addEventListener("keydown", function (e) { if (e.key === "Enter") submitAsk(); });
+
+    // Collapsible drawer
+    $("ask-open").onclick = openAsk;
+    $("ask-close").onclick = closeAsk;
+    $("ask-scrim").onclick = closeAsk;
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeAsk(); });
+  }
+
+  function openAsk() {
+    $("ask-scrim").hidden = false;
+    requestAnimationFrame(function () {
+      $("ask-drawer").classList.add("open");
+      $("ask-scrim").classList.add("show");
+    });
+    $("ask-drawer").setAttribute("aria-hidden", "false");
+    $("ask-open").setAttribute("aria-expanded", "true");
+    setTimeout(function () { $("ask").focus(); }, 180);
+  }
+
+  function closeAsk() {
+    $("ask-drawer").classList.remove("open");
+    $("ask-scrim").classList.remove("show");
+    $("ask-drawer").setAttribute("aria-hidden", "true");
+    $("ask-open").setAttribute("aria-expanded", "false");
+    setTimeout(function () { $("ask-scrim").hidden = true; }, 220);
   }
 
   function renderGuide(ids, atStart) {

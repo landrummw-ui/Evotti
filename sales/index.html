@@ -31,31 +31,42 @@
   <span class="sub" id="range">&nbsp;</span>
 </div>
 
+<!-- Collapsed rail — click to open the natural-language agent -->
+<button class="ask-rail" id="ask-open" aria-controls="ask-drawer" aria-expanded="false" title="Ask the numbers">
+  <span class="spark"></span>
+  <span class="ask-rail-label">Ask the numbers</span>
+</button>
+
+<!-- Off-canvas agent drawer -->
+<aside class="ask-drawer" id="ask-drawer" aria-hidden="true" aria-label="Ask the numbers">
+  <section class="card agent">
+    <div class="card-head">
+      <h2><span class="spark"></span> Ask the numbers</h2>
+      <span class="spacer"></span>
+      <button class="iconbtn" id="ask-close" title="Collapse" aria-label="Collapse">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="ask-row">
+      <input id="ask" type="text" autocomplete="off"
+             placeholder="Ask about sales, plan, a region, a product line…">
+      <button class="btn primary" id="ask-go">Ask</button>
+    </div>
+
+    <div class="guide">
+      <div class="guide-head">
+        <span id="guide-label">Start here</span>
+        <button class="linkbtn" id="guide-reset" hidden>&larr; Start over</button>
+      </div>
+      <div class="suggests" id="suggests"></div>
+    </div>
+  </section>
+</aside>
+<div class="ask-scrim" id="ask-scrim" hidden></div>
+
 <div class="layout">
 
-  <!-- LEFT: the natural-language agent -->
-  <aside class="aside">
-    <section class="card agent">
-      <div class="card-head">
-        <h2><span class="spark"></span> Ask the numbers</h2>
-      </div>
-      <div class="ask-row">
-        <input id="ask" type="text" autocomplete="off"
-               placeholder="Ask about sales, plan, a region, a product line…">
-        <button class="btn primary" id="ask-go">Ask</button>
-      </div>
-
-      <div class="guide">
-        <div class="guide-head">
-          <span id="guide-label">Start here</span>
-          <button class="linkbtn" id="guide-reset" hidden>&larr; Start over</button>
-        </div>
-        <div class="suggests" id="suggests"></div>
-      </div>
-    </section>
-  </aside>
-
-  <!-- RIGHT: answer + dashboard -->
+  <!-- answer + dashboard -->
   <main class="main">
 
     <div id="answer"></div>
