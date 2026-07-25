@@ -103,12 +103,30 @@
       desc: "One source of truth for configurations and price, feeding the Boat Builder and every dealer quote.",
       href: "#", status: "planned", color: "#9a6b1f",
       icon: SVG('<path d="M20.4 12.7 12.3 4.6a2 2 0 0 0-1.4-.6H5a1 1 0 0 0-1 1v5.9a2 2 0 0 0 .6 1.4l8.1 8.1a2 2 0 0 0 2.8 0l4.9-4.9a2 2 0 0 0 0-2.8z"/><circle cx="8" cy="8" r="1.3"/>')
+    },
+    marketing: {
+      title: "Marketing",
+      desc: "Campaigns, content, and lead-gen performance in one view — boat-show spend, web funnel, and dealer handoff.",
+      href: "#", status: "planned", color: "#c2497a",
+      icon: SVG('<path d="M4 10v4a1 1 0 0 0 1 1h2.5l5 3.5v-13L7.5 9H5a1 1 0 0 0-1 1z"/><path d="M16 9.2a4 4 0 0 1 0 5.6"/><path d="M7.5 15v2.6a1.4 1.4 0 0 0 2.8 0V16"/>')
+    },
+    infolink: {
+      title: "Retail Registration Data / InfoLink",
+      desc: "Market share and competitive registrations from InfoLink — how Evotti sells against the field by segment and geography.",
+      href: "#", status: "planned", color: "#2f7d8f",
+      icon: SVG('<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 4"/><path d="M8.5 10h7"/><path d="M8.5 13.5h7"/><path d="M8.5 17h4"/>')
+    },
+    web_apps: {
+      title: "Web Applications",
+      desc: "The Boat Builder and other customer-facing web apps — usage, configurations, and the leads they generate.",
+      href: "#", status: "planned", color: "#6b5b95",
+      icon: SVG('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9.5h18"/><circle cx="6" cy="7.2" r="0.6"/><circle cx="8.4" cy="7.2" r="0.6"/>')
     }
   };
 
   var PERSONAS = [
-    { key: "leadership", name: "Leadership",          dealer: false, tiles: ["dashboard", "crm", "sales", "ai_dev", "dealer_portal", "build", "warranty", "pricing"] },
-    { key: "sales",      name: "Sales",               dealer: false, tiles: ["dashboard", "crm", "sales", "ai_dev", "dealer_portal", "pricing"] },
+    { key: "leadership", name: "Leadership",          dealer: false, tiles: ["dashboard", "crm", "sales", "ai_dev", "dealer_portal", "build", "warranty", "pricing", "marketing", "infolink", "web_apps"] },
+    { key: "sales",      name: "Sales",               dealer: false, tiles: ["dashboard", "crm", "sales", "ai_dev", "dealer_portal", "pricing", "marketing", "infolink", "web_apps"] },
     { key: "controller", name: "Controller",          dealer: false, tiles: ["dashboard", "sales", "ai_dev", "build", "warranty", "pricing"] },
     { key: "dealer",     name: "Dealer",              dealer: true,  tiles: ["dashboard", "build", "warranty", "pricing"] }
   ];
