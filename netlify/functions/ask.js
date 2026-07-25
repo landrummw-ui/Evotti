@@ -52,10 +52,31 @@ const QUERY_TOOL = {
     properties: {
       metric: { type: "string", enum: ["revenue", "units"] },
       view: { type: "string", enum: ["both", "actual", "forecast", "variance"] },
-      group_by: { type: "string", enum: ["month", "week", "day", "region", "product_line"] },
+      group_by: { type: "string", enum: ["month", "quarter", "week", "day", "region", "product_line"] },
       filters: FILTERS_SCHEMA,
       compare_to: Object.assign({ description: "Second period's filters. Present => return per-group deltas (this period minus compare_to)." }, FILTERS_SCHEMA),
-      present: { type: "boolean", description: "Set true on the ONE result that best illustrates your answer; the dashboard charts it." },
+      present: {
+        type: "object",
+        additionalProperties: false,
+        description:
+          "Set this on EXACTLY ONE query_sales call — the result that best answers the question. That result becomes the chart the user sees, drawn the way you describe here. Omit it on every other call. Choose the chart that fits what was actually asked.",
+        properties: {
+          title: { type: "string", description: "Chart title in plain English, phrased to match the question — e.g. 'Revenue by quarter, actual vs plan' or 'Q2 vs Q1 revenue by product line'." },
+          chart: {
+            type: "string",
+            enum: ["bars", "line", "grouped", "variance"],
+            description:
+              "How to draw it. bars = one value per category (e.g. revenue by region). line = a trend across time (day/week/month/quarter). grouped = two bars per category side by side — use for actual-vs-plan or for two compared periods. variance = signed % vs plan per category.",
+          },
+          show: {
+            type: "string",
+            enum: ["actual_vs_plan", "compare_periods", "variance", "actual"],
+            description:
+              "Which numbers to plot. actual_vs_plan = actual and plan together. compare_periods = the two periods (only valid when you passed compare_to). variance = % vs plan. actual = a single actual series.",
+          },
+        },
+        required: ["title", "chart", "show"],
+      },
     },
     required: ["metric", "group_by", "filters"],
   },
@@ -72,9 +93,17 @@ const SYSTEM = [
   "",
   "How to work:",
   "- Use the query_sales tool to get every number. NEVER calculate or estimate arithmetic yourself — if you need a sum, a ranking, or a difference, get it from the tool.",
-  "- To compare two periods (variance/drivers between Q2 and Q1, this month vs last, etc.), pass `compare_to`; the tool returns code-computed per-group deltas. Group by product_line and/or region to surface the drivers.",
+  "- To compare two SPECIFIC periods (variance/drivers between Q2 and Q1, this month vs last), pass `compare_to`; the tool returns code-computed per-group deltas. Group by product_line and/or region to surface the drivers.",
+  "- To show a trend across many periods (all quarters, quarter-over-quarter, month-by-month), do NOT use compare_to — instead set group_by to 'quarter' (or 'month') with no month filter, so every period comes back as its own bucket.",
   "- Call the tool more than once when a question needs more than one cut.",
-  "- ALWAYS mark exactly one query_sales call with present:true — the one whose result best illustrates your answer; it becomes the chart shown. For a comparison question, mark the query that carries compare_to, so the chart shows the two periods side by side.",
+  "",
+  "The chart (you drive it):",
+  "- Mark EXACTLY ONE query_sales call with a `present` object — the result that best answers the question becomes the chart. Choose the chart to fit what was actually asked, not a default:",
+  "  • one value per category (revenue by region, by quarter) -> chart 'bars', show 'actual' (or 'actual_vs_plan' to overlay plan).",
+  "  • a trend over time (daily/weekly) -> chart 'line'.",
+  "  • two specific periods compared -> pass compare_to, chart 'grouped', show 'compare_periods'.",
+  "  • how far each category is off plan -> chart 'variance', show 'variance'.",
+  "- Write a `title` that names exactly what the chart shows and echoes the question.",
   "",
   "Then answer:",
   "- Lead with the answer in the first sentence. Be specific and quote the real figures.",
@@ -197,7 +226,11 @@ exports.handler = async function (event) {
         var out;
         try {
           var spec = SalesQuery.normalizeSpec(tu.input);
-          if (tu.input.present || !presented) presented = { spec: spec, compare: tu.input.compare_to || null };
+          // The model tells us how to present its answer (present:{title,chart,show}).
+          // Honor its pick; only fall back to the last query if it never marked one.
+          if (tu.input.present || !presented) {
+            presented = { spec: spec, compare: tu.input.compare_to || null, present: tu.input.present || null };
+          }
           out = (tu.input.compare_to)
             ? runCompare(spec, tu.input.compare_to)
             : runOne(spec);
@@ -222,8 +255,9 @@ exports.handler = async function (event) {
 function finish(answer, presented, question) {
   var spec = presented ? presented.spec : SalesQuery.interpret(question, { asOf: AS_OF });
   var compare = presented ? presented.compare : null;
+  var present = presented ? presented.present : null;
   if (!answer) answer = SalesQuery.describe(spec, SalesQuery.runQuery(ROWS, spec));
-  return json({ answer: answer, chart: buildChart(spec, compare), source: "live" });
+  return json({ answer: answer, chart: buildChart(spec, compare, present), source: "live" });
 }
 
 // ---- chart the frontend should draw --------------------------------------
@@ -244,16 +278,27 @@ function periodLabel(f) {
   if (f.date_from) return "from " + niceDate(f.date_from);
   return "year to date";
 }
-function buildChart(spec, compareFilters) {
+// The chart is driven by the question: the model declares how to present its
+// answer in `present:{title,chart,show}` and we render exactly that. `present`
+// is null only on the rules-fallback path (no key / error), where we infer a
+// sensible default from the spec instead.
+function buildChart(spec, compareFilters, present) {
   var m = spec.metric, isUnits = m === "units";
   var mLabel = isUnits ? "Units" : "Revenue";
-  var gLabel = { month: "month", week: "week", day: "day", region: "region", product_line: "product line" }[spec.group_by] || spec.group_by;
+  var gLabel = { month: "month", quarter: "quarter", week: "week", day: "day", region: "region", product_line: "product line" }[spec.group_by] || spec.group_by;
+  var timeGroup = spec.group_by === "day" || spec.group_by === "week";
 
-  if (compareFilters) {
+  var p = present || {};
+  // What to plot, and how — from the model, with inferred defaults for fallback.
+  var show = p.show || (compareFilters ? "compare_periods" : (spec.view === "variance" || spec.view === "variance_pct" ? "variance" : "actual_vs_plan"));
+  var wantKind = p.chart || (timeGroup ? "line" : (show === "variance" ? "variance" : (show === "compare_periods" ? "grouped" : "bars")));
+
+  // Two periods side by side (Q2 vs Q1, this month vs last, ...).
+  if (show === "compare_periods" && compareFilters) {
     var c = runCompare(spec, compareFilters);
     return {
-      kind: "compare", metric: m,
-      title: mLabel + " by " + gLabel + " — " + periodLabel(spec.filters) + " vs " + periodLabel(compareFilters),
+      kind: wantKind === "line" ? "line" : "compare", metric: m,
+      title: p.title || (mLabel + " by " + gLabel + " — " + periodLabel(spec.filters) + " vs " + periodLabel(compareFilters)),
       categories: c.groups.map(function (x) { return x.label; }),
       series: [
         { label: periodLabel(spec.filters), values: c.groups.map(function (x) { return x.this_period; }) },
@@ -267,17 +312,30 @@ function buildChart(spec, compareFilters) {
   var aKey = isUnits ? "unitsActual" : "revActual";
   var fKey = isUnits ? "unitsForecast" : "revForecast";
   var vKey = isUnits ? "unitsVariancePct" : "revVariancePct";
-  if ((spec.view === "variance" || spec.view === "variance_pct") && r.buckets.length >= 2) {
+
+  // Signed % vs plan per category.
+  if (show === "variance") {
     return {
       kind: "variance", metric: m,
-      title: mLabel + " variance vs plan by " + gLabel + " — " + periodLabel(spec.filters),
+      title: p.title || (mLabel + " variance vs plan by " + gLabel + " — " + periodLabel(spec.filters)),
       categories: cats, values: r.buckets.map(function (x) { return Math.round(x[vKey] * 10) / 10; })
     };
   }
-  var kind = (spec.group_by === "day" || spec.group_by === "week" || spec.chart === "line") ? "line" : "bars";
+
+  // A single actual series (e.g. "revenue by quarter").
+  if (show === "actual") {
+    return {
+      kind: wantKind === "line" ? "line" : "bars", metric: m,
+      title: p.title || (mLabel + " by " + gLabel + " — " + periodLabel(spec.filters)),
+      categories: cats,
+      series: [{ label: "Actual", values: r.buckets.map(function (x) { return Math.round(x[aKey]); }) }]
+    };
+  }
+
+  // Default: actual vs plan, two series.
   return {
-    kind: kind, metric: m,
-    title: mLabel + " by " + gLabel + " — " + periodLabel(spec.filters) + " (actual vs plan)",
+    kind: wantKind === "line" ? "line" : "bars", metric: m,
+    title: p.title || (mLabel + " by " + gLabel + " — " + periodLabel(spec.filters) + " (actual vs plan)"),
     categories: cats,
     series: [
       { label: "Actual", values: r.buckets.map(function (x) { return Math.round(x[aKey]); }) },

@@ -105,6 +105,10 @@
                              label: function (k) { return "wk " + dayLabel(k); } };
       case "region": return { key: function (r) { return r.region; }, label: function (k) { return k; } };
       case "product_line": return { key: function (r) { return r.product_line; }, label: function (k) { return k; } };
+      case "quarter": return {
+        key: function (r) { var p = r.sale_date.split("-"); return p[0] + "-Q" + (Math.floor((+p[1] - 1) / 3) + 1); },
+        label: function (k) { var p = k.split("-Q"); return "Q" + p[1] + " '" + p[0].slice(2); }
+      };
       case "month":
       default: return { key: function (r) { return ym(r.sale_date); }, label: monthLabel };
     }
@@ -123,7 +127,7 @@
       b.revForecast += r.revenue_forecast;
     }
     var buckets = Object.keys(map).map(function (k) { return map[k]; });
-    var timeGrouped = spec.group_by === "day" || spec.group_by === "week" || spec.group_by === "month";
+    var timeGrouped = spec.group_by === "day" || spec.group_by === "week" || spec.group_by === "month" || spec.group_by === "quarter";
     if (timeGrouped) {
       buckets.sort(function (a, b) { return a.key < b.key ? -1 : 1; });
     } else {
@@ -223,6 +227,7 @@
     var group_by = "month";
     if (/\bby region\b|per region\b|which region|regions?\b/.test(q) && !regions.length) group_by = "region";
     else if (/\bby (product|line|series|model)\b|per (product|line)|which (product|line|series|model)|product line/.test(q)) group_by = "product_line";
+    else if (/\bby quarter\b|per quarter|each quarter|quarterly|quarter[- ]over[- ]quarter|all (four |4 )?quarters/.test(q)) group_by = "quarter";
     else if (/\bdaily\b|per day|by day|each day\b/.test(q)) group_by = "day";
     else if (/\bweekly\b|per week|by week|each week\b/.test(q)) group_by = "week";
     else if (regions.length && !filters.months && /region/.test(q)) group_by = "region";
@@ -243,7 +248,7 @@
 
   function titleFor(s) {
     var mLabel = s.metric === "units" ? "Units" : "Revenue";
-    var g = { month: "by month", week: "by week", day: "daily",
+    var g = { month: "by month", week: "by week", day: "daily", quarter: "by quarter",
       region: "by region", product_line: "by product line" }[s.group_by];
     var scope = "";
     if (s.filters.regions) scope += " — " + s.filters.regions.join(", ");
