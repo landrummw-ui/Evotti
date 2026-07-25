@@ -1,0 +1,84 @@
+/* =============================================================================
+   Evotti Dashboard — daily briefing (Huntington floor-plan payoffs)
+   Rides on /platform/platform.css tokens + shell.
+   ============================================================================= */
+
+.dash-head { padding: 30px 0 22px; }
+.dash-head .eyebrow {
+  margin: 0 0 8px; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--accent);
+}
+.dash-head h1 { margin: 0; font-size: clamp(24px, 3.4vw, 32px); font-weight: 700; letter-spacing: -0.015em; }
+.dash-head .asof { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
+
+.dealer-pick {
+  display: inline-flex; align-items: center; gap: 9px; margin-bottom: 20px;
+  font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--faint);
+}
+.dealer-pick select { width: auto; text-transform: none; letter-spacing: normal; font-size: 14px; padding: 9px 12px; }
+
+/* ------------------------------------------------------------------ card -- */
+.hcard { padding: 24px 24px 26px; }
+.hcard .card-head { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 20px; }
+.hcard .card-head h2 { margin: 0; font-size: 18px; font-weight: 650; letter-spacing: 0.01em; }
+.hcard .cap { margin: 4px 0 0; color: var(--faint); font-size: 13px; }
+.hicon {
+  flex: none; width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center;
+  color: #2f6f8f; background: color-mix(in srgb, #2f6f8f 13%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #2f6f8f 18%, transparent);
+}
+.hicon svg { width: 22px; height: 22px; }
+
+/* ------------------------------------------------------------------ kpis -- */
+.kpis {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px; margin-bottom: 20px;
+}
+.kpi {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 12px; padding: 16px 18px; position: relative; overflow: hidden;
+}
+.kpi::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--border-hi); }
+.kpi.green::before { background: #2f7d4f; }
+.kpi.amber::before { background: #b5761f; }
+.kpi .k-label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); }
+.kpi .k-val { font-size: 27px; font-weight: 750; letter-spacing: -0.02em; margin: 6px 0 2px; }
+.kpi .k-sub { font-size: 12.5px; color: var(--muted); }
+
+/* --------------------------------------------------------------- filters -- */
+.filters { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.filters:empty { display: none; }
+.flabel {
+  font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint);
+  margin-left: 6px;
+}
+.flabel:first-child { margin-left: 0; }
+.filters select { width: auto; font-size: 14px; padding: 8px 11px; }
+.linkbtn {
+  font: inherit; font-size: 13px; cursor: pointer; background: none; border: none;
+  padding: 4px 2px; color: var(--accent); margin-left: 4px;
+}
+.linkbtn:hover { text-decoration: underline; }
+
+/* ----------------------------------------------------------------- table -- */
+.htbl th.num, .htbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.htbl td.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; color: var(--muted); }
+.htbl tr.clickrow { cursor: pointer; }
+.htbl tr.clickrow:hover td { background: var(--surface-hi); }
+.htbl td.go { color: var(--faint); font-size: 12px; text-align: right; white-space: nowrap; }
+.htbl tr.clickrow:hover td.go { color: var(--accent); }
+.htbl td.empty { text-align: center; color: var(--faint); padding: 22px 0; }
+
+.tagp {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600;
+  letter-spacing: 0.03em; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border-hi);
+}
+.tagp::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
+.tagp.paid { color: #2f7d4f; border-color: rgba(47,125,79,0.4); background: rgba(47,125,79,0.10); }
+.tagp.paid::before { background: #2f7d4f; }
+.tagp.floor { color: #b5761f; border-color: rgba(181,118,31,0.4); background: rgba(181,118,31,0.10); }
+.tagp.floor::before { background: #b5761f; }
+
+@media (max-width: 640px) {
+  .htbl th.hide-sm, .htbl td.hide-sm { display: none; }
+}

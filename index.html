@@ -50,6 +50,12 @@
       'stroke-linecap="round" stroke-linejoin="round">' + paths + "</svg>";
   };
   var TILES = {
+    dashboard: {
+      title: "Daily Dashboard",
+      desc: "Your morning briefing — Huntington floor-plan payoffs and outstanding balance by dealer, refreshed daily.",
+      href: "/dashboard/", status: "live", color: "#3d5a80",
+      icon: SVG('<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>')
+    },
     crm: {
       title: "Evotti CRM",
       desc: "Track Boat Builder leads from first configuration through dealer assignment, quote, and delivered build.",
@@ -101,10 +107,10 @@
   };
 
   var PERSONAS = [
-    { key: "leadership", name: "Leadership",          dealer: false, tiles: ["crm", "sales", "ai_dev", "dealer_portal", "build", "warranty", "pricing"] },
+    { key: "leadership", name: "Leadership",          dealer: false, tiles: ["dashboard", "crm", "sales", "ai_dev", "dealer_portal", "build", "warranty", "pricing"] },
     { key: "sales",      name: "Sales",               dealer: false, tiles: ["crm", "sales", "ai_dev", "dealer_portal", "pricing"] },
-    { key: "controller", name: "Controller",          dealer: false, tiles: ["sales", "ai_dev", "build", "warranty", "pricing"] },
-    { key: "dealer",     name: "Dealer",              dealer: true,  tiles: ["build", "warranty", "pricing"] }
+    { key: "controller", name: "Controller",          dealer: false, tiles: ["dashboard", "sales", "ai_dev", "build", "warranty", "pricing"] },
+    { key: "dealer",     name: "Dealer",              dealer: true,  tiles: ["dashboard", "build", "warranty", "pricing"] }
   ];
 
   var DEALERS = [

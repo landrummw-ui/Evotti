@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evotti Dashboard</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23a83435'/><text x='16' y='24' font-family='Segoe UI,Helvetica,Arial,sans-serif' font-size='21' font-weight='700' fill='%23ffffff' text-anchor='middle'>E</text></svg>">
+<link rel="stylesheet" href="/platform/platform.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="appbar">
+  <a class="lockup" href="/">
+    <img src="/assets/evotti-logo-black.png" alt="Evotti">
+    <span class="rule"></span>
+    <span class="sub">Apps</span>
+  </a>
+  <span class="spacer"></span>
+  <div class="switcher">
+    <span class="lbl">Viewing as</span>
+    <span class="sw-group" id="switch"></span>
+    <span class="demo-badge">Demo</span>
+  </div>
+</header>
+<div class="appbar-line"></div>
+
+<div class="wrap">
+  <section class="dash-head">
+    <p class="eyebrow" id="eyebrow">&nbsp;</p>
+    <h1 id="greeting">Good morning.</h1>
+    <p class="asof" id="asof">&nbsp;</p>
+  </section>
+
+  <div id="dealer-pick"></div>
+
+  <section class="card hcard">
+    <div class="card-head">
+      <div class="hicon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 4l9 6.5"/><path d="M5 9.5V20h14V9.5"/><path d="M9.5 20v-5h5v5"/></svg>
+      </div>
+      <div>
+        <h2>Huntington Floor Plan — Payoffs &amp; Balance</h2>
+        <p class="cap" id="hcap">&nbsp;</p>
+      </div>
+    </div>
+
+    <div class="kpis" id="kpis"></div>
+    <div class="filters" id="filters"></div>
+    <div class="tbl-wrap"><table class="tbl htbl" id="htable"></table></div>
+  </section>
+
+  <div class="foot">
+    <span>Evotti Apps &mdash; daily briefing</span>
+    <span>Floor-plan financing · Huntington National Bank</span>
+  </div>
+</div>
+
+<script src="huntington-data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
