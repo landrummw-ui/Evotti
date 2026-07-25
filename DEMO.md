@@ -83,6 +83,24 @@ Lead with **platform**, not features. The tiles, the personas, the shared data, 
 
 ---
 
+## The self-writing report library (speak to)
+
+> Vision talking point — the natural extension of the dynamic agent. Same "speak to, don't demo" posture.
+
+Behind the agent sits a **report registry** — a growing library of named, defined reports. When someone asks a question:
+- If it matches a report we've already defined, the agent **runs that report**.
+- If it's new, the agent **builds the report, answers, and saves the definition** — so the next person gets it instantly.
+
+**The pitch:**
+> "Standard reporting *and* an agent — and the agent builds new standard reports as your team asks new questions. The reporting suite grows itself, and I curate the best ones into your official library."
+
+**Why this also controls cost (the part a CFO leans in on):**
+An open-ended agent that reasons from scratch on every question is the runaway-token risk. The registry caps it: once a report is defined, a repeat question **runs the stored report — deterministic, near-zero model cost — instead of re-running a full analysis every time.** The expensive thinking happens *once*, when the report is first created; after that it's cheap execution. So cost goes **down** as the library matures, and the runaway tail is bounded — a defined report has a known, small ceiling.
+
+**Ties to governance:** agent-created reports are proposals; you promote the good ones to "official," rename, or retire — the same admin console as the feedback/memory layer. One curation surface for both.
+
+---
+
 ## Anticipated questions
 
 | They ask | You say |
@@ -98,6 +116,7 @@ Lead with **platform**, not features. The tiles, the personas, the shared data, 
 ## Held back / roadmap (mention as direction, don't show)
 
 - Feedback + memory layer (above) — the compounding-value story.
+- Self-writing report registry (above) — the library that grows itself and *lowers* token cost as it matures.
 - Full UAC / real logins (persona switcher is the demo stand-in).
 - Planned tiles: Dealer Portal, Build Tracker, Warranty & Service, Options & Pricing.
 - Voice tile is intentionally hidden from the launcher — pull it out as the "one more thing."
