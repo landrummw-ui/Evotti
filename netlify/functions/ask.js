@@ -74,7 +74,7 @@ const SYSTEM = [
   "- Use the query_sales tool to get every number. NEVER calculate or estimate arithmetic yourself — if you need a sum, a ranking, or a difference, get it from the tool.",
   "- To compare two periods (variance/drivers between Q2 and Q1, this month vs last, etc.), pass `compare_to`; the tool returns code-computed per-group deltas. Group by product_line and/or region to surface the drivers.",
   "- Call the tool more than once when a question needs more than one cut.",
-  "- Mark exactly one query result with present:true — the one that best illustrates the answer. The dashboard charts it.",
+  "- ALWAYS mark exactly one query_sales call with present:true — the one whose result best illustrates your answer; it becomes the chart shown. For a comparison question, mark the query that carries compare_to, so the chart shows the two periods side by side.",
   "",
   "Then answer:",
   "- Lead with the answer in the first sentence. Be specific and quote the real figures.",
@@ -179,7 +179,7 @@ exports.handler = async function (event) {
 
   try {
     var messages = [{ role: "user", content: question }];
-    var chartSpec = null;   // last spec run, or the one flagged present:true
+    var presented = null;   // {spec, compare} flagged present:true, else the last query
 
     for (var step = 0; step < MAX_STEPS; step++) {
       var resp = await callAnthropic(messages, true);
@@ -190,14 +190,14 @@ exports.handler = async function (event) {
 
       var toolUses = (data.content || []).filter(function (b) { return b.type === "tool_use"; });
       if (data.stop_reason !== "tool_use" || !toolUses.length) {
-        return finish(textOf(data.content), chartSpec, question);
+        return finish(textOf(data.content), presented, question);
       }
 
       var results = toolUses.map(function (tu) {
         var out;
         try {
           var spec = SalesQuery.normalizeSpec(tu.input);
-          if (tu.input.present || !chartSpec) chartSpec = spec;   // prefer flagged; else keep last
+          if (tu.input.present || !presented) presented = { spec: spec, compare: tu.input.compare_to || null };
           out = (tu.input.compare_to)
             ? runCompare(spec, tu.input.compare_to)
             : runOne(spec);
@@ -213,14 +213,75 @@ exports.handler = async function (event) {
     var last = await callAnthropic(messages, false);
     if (!last.ok) throw new Error("anthropic " + last.status);
     var ldata = await last.json();
-    return finish(textOf(ldata.content), chartSpec, question);
+    return finish(textOf(ldata.content), presented, question);
   } catch (err) {
     return fallback(question);
   }
 };
 
-function finish(answer, chartSpec, question) {
-  if (!chartSpec) chartSpec = SalesQuery.interpret(question, { asOf: AS_OF });
-  if (!answer) answer = SalesQuery.describe(chartSpec, SalesQuery.runQuery(ROWS, chartSpec));
-  return json({ answer: answer, spec: chartSpec, title: chartSpec.title, source: "live" });
+function finish(answer, presented, question) {
+  var spec = presented ? presented.spec : SalesQuery.interpret(question, { asOf: AS_OF });
+  var compare = presented ? presented.compare : null;
+  if (!answer) answer = SalesQuery.describe(spec, SalesQuery.runQuery(ROWS, spec));
+  return json({ answer: answer, chart: buildChart(spec, compare), source: "live" });
+}
+
+// ---- chart the frontend should draw --------------------------------------
+function niceDate(iso) { return SalesQuery.MON3[+iso.slice(5, 7) - 1] + " " + (+iso.slice(8, 10)); }
+function periodLabel(f) {
+  f = f || {};
+  if (f.months && f.months.length) {
+    var ms = f.months.slice().sort();
+    if (ms.length === 3) {
+      var mm = ms.map(function (x) { return +x.slice(5, 7); });
+      var q = { 1: "Q1", 4: "Q2", 7: "Q3", 10: "Q4" };
+      if (q[mm[0]] && mm[1] === mm[0] + 1 && mm[2] === mm[0] + 2) return q[mm[0]] + " " + ms[0].slice(0, 4);
+    }
+    if (ms.length === 1) return SalesQuery.monthLabel(ms[0]);
+    return SalesQuery.monthLabel(ms[0]) + "–" + SalesQuery.monthLabel(ms[ms.length - 1]);
+  }
+  if (f.date_from && f.date_to) return f.date_from === f.date_to ? niceDate(f.date_from) : niceDate(f.date_from) + "–" + niceDate(f.date_to);
+  if (f.date_from) return "from " + niceDate(f.date_from);
+  return "year to date";
+}
+function buildChart(spec, compareFilters) {
+  var m = spec.metric, isUnits = m === "units";
+  var mLabel = isUnits ? "Units" : "Revenue";
+  var gLabel = { month: "month", week: "week", day: "day", region: "region", product_line: "product line" }[spec.group_by] || spec.group_by;
+
+  if (compareFilters) {
+    var c = runCompare(spec, compareFilters);
+    return {
+      kind: "compare", metric: m,
+      title: mLabel + " by " + gLabel + " — " + periodLabel(spec.filters) + " vs " + periodLabel(compareFilters),
+      categories: c.groups.map(function (x) { return x.label; }),
+      series: [
+        { label: periodLabel(spec.filters), values: c.groups.map(function (x) { return x.this_period; }) },
+        { label: periodLabel(compareFilters), values: c.groups.map(function (x) { return x.compare_period; }) }
+      ]
+    };
+  }
+
+  var r = SalesQuery.runQuery(ROWS, spec);
+  var cats = r.buckets.map(function (x) { return x.label; });
+  var aKey = isUnits ? "unitsActual" : "revActual";
+  var fKey = isUnits ? "unitsForecast" : "revForecast";
+  var vKey = isUnits ? "unitsVariancePct" : "revVariancePct";
+  if ((spec.view === "variance" || spec.view === "variance_pct") && r.buckets.length >= 2) {
+    return {
+      kind: "variance", metric: m,
+      title: mLabel + " variance vs plan by " + gLabel + " — " + periodLabel(spec.filters),
+      categories: cats, values: r.buckets.map(function (x) { return Math.round(x[vKey] * 10) / 10; })
+    };
+  }
+  var kind = (spec.group_by === "day" || spec.group_by === "week" || spec.chart === "line") ? "line" : "bars";
+  return {
+    kind: kind, metric: m,
+    title: mLabel + " by " + gLabel + " — " + periodLabel(spec.filters) + " (actual vs plan)",
+    categories: cats,
+    series: [
+      { label: "Actual", values: r.buckets.map(function (x) { return Math.round(x[aKey]); }) },
+      { label: "Plan", values: r.buckets.map(function (x) { return Math.round(x[fKey]); }) }
+    ]
+  };
 }

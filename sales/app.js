@@ -305,7 +305,8 @@
   function legendHtml(a, b) {
     return '<div class="legend">' +
       '<span><i class="bar" style="background:#a83435"></i>' + a + "</span>" +
-      '<span><i class="bar" style="background:#47505f"></i>' + b + "</span></div>";
+      (b ? '<span><i class="bar" style="background:#47505f"></i>' + b + "</span>" : "") +
+      "</div>";
   }
 
   // ---- guided question tree ------------------------------------------------
@@ -407,15 +408,21 @@
       if (!r.ok) throw new Error("fn " + r.status);
       return r.json();
     }).then(function (data) {
-      var spec = SQ.normalizeSpec(data.spec);
-      var result = SQ.runQuery(PAYLOAD, spec);
-      renderAnswer(q, spec, data.title || spec.title,
-        data.answer || SQ.describe(spec, result), result,
-        data.source === "rules" ? "rules" : "live");
+      if (data.chart) {
+        // Live agent: draw exactly the chart it chose (single period or a
+        // two-period comparison), with the title it computed.
+        renderAnswer(q, data.chart.title, data.answer || "", "live", drawFromChart(data.chart));
+      } else {
+        var spec = SQ.normalizeSpec(data.spec);
+        var result = SQ.runQuery(PAYLOAD, spec);
+        renderAnswer(q, data.title || spec.title || SQ.titleFor(spec),
+          data.answer || SQ.describe(spec, result),
+          data.source === "rules" ? "rules" : "live", drawFromSpec(spec, result));
+      }
     }).catch(function () {
       var spec = SQ.interpret(q, PAYLOAD);
       var result = SQ.runQuery(PAYLOAD, spec);
-      renderAnswer(q, spec, spec.title, SQ.describe(spec, result), result, "rules");
+      renderAnswer(q, spec.title || SQ.titleFor(spec), SQ.describe(spec, result), "rules", drawFromSpec(spec, result));
     });
   }
 
@@ -426,29 +433,53 @@
     $("answer").scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
-  function renderAnswer(q, spec, title, text, result, source) {
+  function renderAnswer(q, title, text, source, drawChart) {
     var wrap = document.createElement("div");
     wrap.className = "answer";
     wrap.innerHTML =
       '<div class="a-q">' + esc(q) + "</div>" +
-      '<div class="a-title">' + esc(title || SQ.titleFor(spec)) + "</div>" +
+      '<div class="a-title">' + esc(title || "") + "</div>" +
       '<div class="a-text">' + esc(text) + "</div>" +
       '<div class="chart-slot"></div>' +
       '<div class="a-src">Answered from <span class="tag ' +
       (source === "live" ? "live" : "") + '">' +
-      (source === "live" ? "live agent" : "built-in rules") +
-      "</span> · " + result.buckets.length + " group" +
-      (result.buckets.length === 1 ? "" : "s") + "</div>";
-    var svg = resultChart(spec, result);
-    if (svg) {
-      var s = wrap.querySelector(".chart-slot");
-      s.appendChild(svg);
-      var isVar = spec.view === "variance" || spec.view === "variance_pct";
-      s.insertAdjacentHTML("beforeend",
-        legendHtml(isVar ? "Over plan" : "Actual", isVar ? "Under plan" : "Plan"));
-    }
+      (source === "live" ? "live agent" : "built-in rules") + "</span></div>";
+    if (drawChart) drawChart(wrap.querySelector(".chart-slot"));
     $("answer").innerHTML = "";
     $("answer").appendChild(wrap);
+  }
+
+  // Draw the explicit chart the agent returned.
+  function drawFromChart(chart) {
+    return function (slot) {
+      if (!chart || !chart.categories || !chart.categories.length) return;
+      var fmt = chart.metric === "units" ? SQ.num : SQ.money;
+      if (chart.kind === "variance") {
+        slot.appendChild(SC.varianceBars(chart.categories, chart.values, { suffix: "%", height: 240 }));
+        slot.insertAdjacentHTML("beforeend", legendHtml("Over plan", "Under plan"));
+        return;
+      }
+      var series = chart.series.map(function (s, i) {
+        return { values: s.values, color: i === 0 ? color.crimson : color.plan, dashed: chart.kind === "line" && i === 1 };
+      });
+      var svg = chart.kind === "line"
+        ? SC.lineChart(chart.categories, series, { fmt: fmt, height: 260 })
+        : SC.groupedBars(chart.categories, series, { fmt: fmt, height: 260 });
+      slot.appendChild(svg);
+      slot.insertAdjacentHTML("beforeend",
+        legendHtml(chart.series[0].label, chart.series[1] ? chart.series[1].label : ""));
+    };
+  }
+
+  // Draw a chart computed locally from a spec (rules fallback path).
+  function drawFromSpec(spec, result) {
+    return function (slot) {
+      var svg = resultChart(spec, result);
+      if (!svg) return;
+      slot.appendChild(svg);
+      var isVar = spec.view === "variance" || spec.view === "variance_pct";
+      slot.insertAdjacentHTML("beforeend", legendHtml(isVar ? "Over plan" : "Actual", isVar ? "Under plan" : "Plan"));
+    };
   }
 
   function resultChart(spec, result) {
