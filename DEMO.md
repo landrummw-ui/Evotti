@@ -101,6 +101,36 @@ An open-ended agent that reasons from scratch on every question is the runaway-t
 
 ---
 
+## The Unified Data Platform (speak to)
+
+> Vision talking point — the foundation everything else runs on once we're on live data. "Speak to, don't demo." This is the answer to *"where do the numbers actually come from?"*
+
+Today the demo runs on a conformed mock dataset. The production version stands up a **Unified Data Platform** — one governed place where Evotti's data from every system lands, gets modeled once, and feeds every dashboard and the agent.
+
+**The pitch:**
+> "We pull from NetSuite, from Huntington, from the CRM — through their APIs where they have them, scheduled file feeds where they don't — and land it all in one conformed model. A 'boat,' a 'dealer,' a 'HIN,' a 'month' means the same thing everywhere. The dashboards and the agent read from that one platform, not from a dozen systems directly."
+
+**The line that sells it — APIs are the pipes; the UDP is the reservoir:**
+> "Having an API to each system isn't the same as having a data platform. An API gives you one system's data, in that system's language, as it looks right now. The platform gives you all of them joined together, speaking one language, with history — so you can ask a question that spans NetSuite *and* Huntington *and* the CRM in a single breath, and get an answer in a second instead of hammering three live systems."
+
+What direct-API-only **can't** do (and the UDP does):
+- **Cross-system joins** — ERP receivables + Huntington payoffs + CRM pipeline in one query. You can't join across vendors in a live API call.
+- **History / time-series** — "what was the floor-plan balance on March 3." APIs give you *now*; the platform remembers.
+- **Speed & resilience** — queries hit our store, not the vendor's rate limits and uptime.
+- **One vocabulary** — conformed keys and definitions, so every report ties out.
+
+**Tune to the room:**
+- **CFO → single source of truth.** *"One set of numbers the whole company agrees on, instead of finance, sales, and the dealers each reconciling their own export."*
+- **Controller → governance & cost.** *"Data lands once, definitions are controlled, access is by persona — and the agent reads from the platform, not from live ERP calls, so it's fast, auditable, and doesn't run up cost or rate limits."* (Same token-cost logic as the report library, one layer down: precomputed and conformed beats re-deriving from raw every time.)
+
+**Why it's credible, not vapor** (if asked "how big a lift?"):
+- You're **already looking at a UDP in miniature** — the sales dashboard and agent both read from one conformed model, not from raw source tables. This is that pattern with real pipes.
+- **Supabase can be the platform to start** — it's Postgres, it's already our backend, and the RLS/access work is the same access layer. No new vendor to buy on day one.
+- Build it **incrementally**: start with the two sources that matter first (ERP/sales + Huntington), prove the loop, add systems as we go. We don't boil the ocean.
+- Honest caveat worth naming: **NetSuite has excellent APIs; Huntington's floor-plan data is likely a scheduled file feed, not a live API.** That's normal — the platform is built to ingest both, which is exactly why you want it.
+
+---
+
 ## Anticipated questions
 
 | They ask | You say |
@@ -109,6 +139,8 @@ An open-ended agent that reasons from scratch on every question is the runaway-t
 | "Can it make up numbers?" | "No — the model only decides what to calculate; the math is deterministic code. The number is always exact." |
 | "Is this secure? / Who can see what?" | "Access control is by user + persona; dealers are scoped to their own company. Full login gets wired up as we go live." |
 | "How does it get better over time?" | *(the feedback & memory pitch above)* |
+| "Where does the data come from? / Do we need a data warehouse?" | "It lands in one Unified Data Platform — pulled from NetSuite, Huntington, the CRM. APIs are the pipes; the platform is the reservoir the dashboards and agent read from. *(the UDP pitch above)*" |
+| "If we have APIs to everything, isn't a platform redundant?" | "An API gives you one system's data as it looks right now. The platform gives you all of them joined, in one language, with history — that's the part no single API can do." |
 | "How hard is [feature X]?" | "The platform foundation is built — most of what you're imagining is a defined build on top of it, not a rebuild." |
 
 ---
@@ -117,6 +149,7 @@ An open-ended agent that reasons from scratch on every question is the runaway-t
 
 - Feedback + memory layer (above) — the compounding-value story.
 - Self-writing report registry (above) — the library that grows itself and *lowers* token cost as it matures.
+- Unified Data Platform (above) — one conformed reservoir fed from NetSuite/Huntington/CRM; the foundation the whole platform runs on with live data.
 - Full UAC / real logins (persona switcher is the demo stand-in).
 - Planned tiles: Dealer Portal, Build Tracker, Warranty & Service, Options & Pricing.
 - Voice tile is intentionally hidden from the launcher — pull it out as the "one more thing."
