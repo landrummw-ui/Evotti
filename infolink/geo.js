@@ -165,7 +165,7 @@
     document.getElementById("um-detail").innerHTML =
       '<div class="um-dname">' + esc(NAME[code] || code) + '</div>' +
       '<div class="um-dfigs"><span class="v">' + num(v) + '</span><span class="l">registrations · ' + G.labels[P] + '</span></div>' +
-      '<div class="um-dsub">' + (v / natl * 100).toFixed(1) + '% of U.S.' + (rank ? ' · #' + rank + ' of ' + G.states.length : "") + '</div>' +
+      '<div class="um-dsub">' + (v / natl * 100).toFixed(1) + '% of U.S.' + (rank ? ' · #' + rank + ' of 50 states + D.C.' : "") + '</div>' +
       '<div class="um-ctitle">Top counties</div>' + cHtml;
   }
   function drawTop() {
