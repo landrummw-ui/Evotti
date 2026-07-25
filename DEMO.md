@@ -34,7 +34,7 @@ Lead with **platform**, not features. The tiles, the personas, the shared data, 
   - [ ] Launcher: switch personas (Leadership → Sales → Controller → Dealer); tiles change per role
   - [ ] Daily Dashboard: Huntington + yesterday's sales cards load; click **Expand** to open the filterable detail
   - [ ] Sales Analysis: ask a free-form question → real numbers + a branded chart
-  - [ ] InfoLink: Evotti spotlight + leaderboard load; ask "who's gaining share?" → answer + chart
+  - [ ] InfoLink: Evotti spotlight + leaderboard load; ask "who's gaining share?" → answer + chart; U.S. map loads, flip a year, click a state → counties
   - [ ] Kanban: board loads, drag a card, it sticks on reload
   - [ ] Voice: "How were sales yesterday?" → it speaks back
 - [ ] **Canned questions ready** (below), in case the room goes quiet.
@@ -47,7 +47,7 @@ Lead with **platform**, not features. The tiles, the personas, the shared data, 
 2. **Daily Dashboard — the morning briefing.** This is the landing page. *"Every role opens to their own at-a-glance briefing."* Show the **Huntington floor-plan** card (payoffs this month + outstanding balance) and **yesterday's sales**. Hit **Expand** on Huntington → the full filterable, by-dealer, drill-to-HIN report. *"Executives read the headline; the detail is one click away."*
 3. **Sales Analysis — standard reporting.** Daily actuals vs plan, territory × model line, quarter view, filters, maximize a tile. *"Everything a normal BI tool does."*
 4. **Sales Analysis — the agent (the wow).** Type a plain-English question. *"The model interprets the question; the numbers come from the same engine as the dashboard — exact, never made up."* Then a comparison: *"main drivers of variance between Q2 and Q1."*
-5. **InfoLink — the agent on data we don't even own.** Open Retail Registration. Land on the Evotti spotlight (*"we just entered pontoons"*), then ask *"who's gaining share the fastest?"* *"This is a report we buy from InfoLink — same AI capability, pointed at competitive intelligence. Any report we receive can land here and get this treatment."*
+5. **InfoLink — the agent on data we don't even own.** Open Retail Registration. Land on the Evotti spotlight (*"we just entered pontoons"*), then ask *"who's gaining share the fastest?"* Scroll to the **U.S. heat-bubble map**, flip the year back to '22 and let them watch the market shrink and cool; click **Michigan** or **Florida** to drill into counties. *"This is a report we buy from InfoLink — same AI capability, pointed at competitive intelligence. Any report we receive can land here and get this treatment."*
 6. **Kanban — how we run the build pipeline.** *"Request → go-live, with SLAs. This is the governance of what gets built next."* Ties into the feedback vision.
 7. **"One more thing" — voice.** Pull out your phone, tap the tile, ask out loud, let it talk back. Don't over-explain; let it land.
 
@@ -60,7 +60,7 @@ Lead with **platform**, not features. The tiles, the personas, the shared data, 
 | **Launcher + personas** | One home; role-based app catalog; live apps float to the top |
 | **Daily Dashboard** | Per-role morning briefing; summary cards with **Expand-to-detail**; Huntington floor-plan payoffs + balance, yesterday's sales |
 | **Sales Analysis** | Daily actual-vs-plan by territory × model, quarter view, filters, CSV — **plus** a plain-English agent |
-| **InfoLink (Retail Registration)** | Competitive market-share intel from a received InfoLink feed, **plus** a second agent |
+| **InfoLink (Retail Registration)** | Competitive market-share intel from a received InfoLink feed — leaderboard, share trends, an interactive U.S. heat-bubble map by state/county, **plus** a second agent |
 | **Voice** | The sales agent, hands-free, on a phone home screen |
 | **Kanban (AI Dev)** | Shared, live pipeline board (Supabase) — request to go-live with SLAs |
 
@@ -89,6 +89,7 @@ Lead with **platform**, not features. The tiles, the personas, the shared data, 
 - **A report Evotti *receives*** — InfoLink's industry feed of new pontoon registrations and market share by make, five trailing-12-month periods (May '22 → '26). Inbound source data, not something we generate.
 - Leads with the **Evotti spotlight**: we just *entered* pontoons (0 → 281 registrations, 0.60% share, #24 of 52) in a shrinking market (63.2K → 46.9K). Plus a share-trend chart and a full leaderboard (Evotti pinned).
 - **A second agent, on someone else's data:** *"Who's gaining share fastest?"* (Sea Doo +5.6pts; Barletta +2.9), *"How is Evotti doing?"*, *"Is the market growing?"* — same exact-by-construction pattern.
+- **Interactive U.S. heat-bubble map** — where pontoons register, by state, from the report's location detail. Pick a trailing-12-month year and the map recolors *one year at a time*; bubbles are scaled across all years, so flipping back to '22 both **grows and reddens** — you watch the market contract. Click any state for its share, national rank, and **top-county drill**. Real geographic map, hand-rolled, fully offline. The story: pontoons are **lake country** — Michigan, Minnesota, Wisconsin, Florida, Texas lead.
 - *"We land it in the platform, and the same AI reads it — competitive intelligence gets the plain-English treatment too, not just our own sales."*
 
 ### Voice (pocket demo)
