@@ -16,13 +16,18 @@ on conflict (id) do update set
   key = excluded.key, name = excluded.name, description = excluded.description,
   is_dealer = excluded.is_dealer, sort = excluded.sort;
 
--- dealers (one per Sales Analysis region) --------------------------------------
+-- dealers (two per Sales Analysis region) --------------------------------------
 insert into public.dealers (name, city, state, region) values
-  ('Great Lakes Marine',   'Elkhart',      'IN', 'Great Lakes'),
-  ('Harborline Boats',     'Charleston',   'SC', 'Southeast'),
-  ('Gulf Coast Yachts',    'Tampa',        'FL', 'Gulf'),
-  ('Bay State Marine',     'Newport',      'RI', 'Northeast'),
-  ('Cascade Watersports',  'Seattle',      'WA', 'West');
+  ('Great Lakes Marine',   'Elkhart',       'IN', 'Great Lakes'),
+  ('Northwind Boatworks',  'Traverse City', 'MI', 'Great Lakes'),
+  ('Harborline Boats',     'Charleston',    'SC', 'Southeast'),
+  ('Palmetto Marine',      'Savannah',      'GA', 'Southeast'),
+  ('Gulf Coast Yachts',    'Tampa',         'FL', 'Gulf'),
+  ('Bayou Marine Group',   'New Orleans',   'LA', 'Gulf'),
+  ('Bay State Marine',     'Newport',       'RI', 'Northeast'),
+  ('Cape & Isles Boats',   'Portland',      'ME', 'Northeast'),
+  ('Cascade Watersports',  'Seattle',       'WA', 'West'),
+  ('Pacific Edge Marine',  'Portland',      'OR', 'West');
 
 -- tiles (the app catalog) ------------------------------------------------------
 insert into public.tiles (id, key, title, description, href, status, sort) values
