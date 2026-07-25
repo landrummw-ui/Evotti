@@ -25,10 +25,18 @@
     SC:"South Carolina",SD:"South Dakota",TN:"Tennessee",TX:"Texas",UT:"Utah",VA:"Virginia",
     VT:"Vermont",WA:"Washington",WI:"Wisconsin",WV:"West Virginia",WY:"Wyoming"
   };
-  var TEAL = "#2f7d8f", TEAL_DK = "#1f5f6b", CRIMSON = "#a83435";
   var LAND = "#eef2f4", LAND_ST = "#d5dae0", INK = "#16181c", MUTE = "#5c616b";
   var NS = "http://www.w3.org/2000/svg";
   var MAXR = 34;
+  // Warm heat ramp (YlOrRd): pale yellow (low) -> deep red (high).
+  var HEAT = [[255,237,160], [254,178,76], [240,110,40], [189,0,38]];
+  var HEAT_CSS = "linear-gradient(90deg,#ffeda0,#feb24c,#f06e28,#bd0026)";
+  function heat(t) {
+    t = Math.max(0, Math.min(1, t));
+    var n = HEAT.length - 1, i = Math.min(n - 1, Math.floor(t * n)), f = t * n - i;
+    var a = HEAT[i], b = HEAT[i + 1];
+    return "rgb(" + Math.round(a[0] + (b[0]-a[0])*f) + "," + Math.round(a[1] + (b[1]-a[1])*f) + "," + Math.round(a[2] + (b[2]-a[2])*f) + ")";
+  }
 
   var byCode = {};   G.states.forEach(function (s) { byCode[s.st] = s; });
   var usByCode = {}; U.states.forEach(function (s) { usByCode[s.code] = s; });
@@ -99,8 +107,8 @@
         if (o.v <= 0) return;
         var s = o.s, sel = s.code === selected;
         var c = el("circle", { cx: s.cx, cy: s.cy, r: rOf(o.v, mx),
-          fill: TEAL, "fill-opacity": opOf(o.v, mx),
-          stroke: sel ? CRIMSON : TEAL_DK, "stroke-width": sel ? 2.5 : 0.8,
+          fill: heat(Math.sqrt(o.v / mx)), "fill-opacity": 0.82,
+          stroke: sel ? INK : "#ffffff", "stroke-width": sel ? 2.5 : 0.7,
           cursor: "pointer", "data-st": s.code });
         c.addEventListener("mouseenter", function () { selectState(s.code); });
         c.addEventListener("click", function () { selectState(s.code); });
@@ -121,14 +129,17 @@
     var s = el("svg", { viewBox: "0 0 " + W + " " + H, width: W, height: H });
     refs.forEach(function (v) {
       var r = rOf(v, mx), cx = W / 2, cy = H - 6 - r;
-      s.appendChild(el("circle", { cx: cx, cy: cy, r: r, fill: "none", stroke: TEAL_DK, "stroke-width": 1 }));
+      s.appendChild(el("circle", { cx: cx, cy: cy, r: r, fill: "none", stroke: "#9aa0a8", "stroke-width": 1 }));
       s.appendChild(el("text", { x: cx, y: H - 6 - 2 * r + 10, "text-anchor": "middle", "font-size": 9, fill: MUTE }, num(v)));
     });
     var wrap = document.getElementById("um-legend");
     wrap.innerHTML = "";
-    var lab = document.createElement("span");
-    lab.className = "um-unit"; lab.textContent = "bubble size = registrations";
-    wrap.appendChild(s); wrap.appendChild(lab);
+    var sizeLab = document.createElement("span");
+    sizeLab.className = "um-unit"; sizeLab.textContent = "size = registrations";
+    var ramp = document.createElement("span");
+    ramp.className = "um-ramp";
+    ramp.innerHTML = '<span class="rl">fewer</span><i style="background:' + HEAT_CSS + '"></i><span class="rl">more</span>';
+    wrap.appendChild(s); wrap.appendChild(sizeLab); wrap.appendChild(ramp);
   }
 
   // ---- detail + top list (shared with prior version) -----------------------
