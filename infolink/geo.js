@@ -1,29 +1,20 @@
 // =============================================================================
-// Evotti InfoLink — U.S. state tile-grid choropleth (pontoon registrations)
+// Evotti InfoLink — U.S. bubble (heat) map of pontoon registrations
 // =============================================================================
-// Hand-rolled inline SVG, no map library: each state is a tile placed in its
-// geographic position, shaded by registration volume for the SELECTED trailing-
-// 12-month period. Pick a year → the map recolors (one year at a time). Hover
-// or tap a state → detail + county drill. Data: window.EVOTTI_INFOLINK_GEO
-// (all five TTM periods, all makes), generated from the InfoLink location tab.
+// Real geographic U.S. map (Albers USA, from us-atlas, projected offline into
+// infolink/usmap-geo.js) with a proportional "heat bubble" per state — radius
+// and opacity encode registration volume for the SELECTED trailing-12-month
+// period. Pick a year → the bubbles resize (one year at a time). Hover/tap a
+// state for its share, rank, and top-county drill. No map library, no runtime
+// fetches. Data: window.EVOTTI_INFOLINK_GEO + window.EVOTTI_USMAP.
 // =============================================================================
 (function () {
   "use strict";
   var G = window.EVOTTI_INFOLINK_GEO;
+  var U = window.EVOTTI_USMAP;
   var host = document.getElementById("usmap");
-  if (!G || !host) return;
+  if (!G || !U || !host) return;
 
-  // Geographic tile layout (row, col) — standard U.S. state grid, 8×11.
-  var POS = {
-    AK:[0,0], ME:[0,10],
-    VT:[1,9], NH:[1,10],
-    WA:[2,0], ID:[2,1], MT:[2,2], ND:[2,3], MN:[2,4], IL:[2,5], WI:[2,6], MI:[2,7], NY:[2,9], MA:[2,10],
-    OR:[3,0], NV:[3,1], WY:[3,2], SD:[3,3], IA:[3,4], IN:[3,5], OH:[3,6], PA:[3,7], NJ:[3,8], CT:[3,9], RI:[3,10],
-    CA:[4,0], UT:[4,1], CO:[4,2], NE:[4,3], MO:[4,4], KY:[4,5], WV:[4,6], VA:[4,7], MD:[4,8], DE:[4,9],
-    AZ:[5,0], NM:[5,1], KS:[5,2], AR:[5,3], TN:[5,4], NC:[5,5], SC:[5,6], DC:[5,7],
-    OK:[6,2], LA:[6,3], MS:[6,4], AL:[6,5], GA:[6,6],
-    HI:[7,0], TX:[7,2], FL:[7,6]
-  };
   var NAME = {
     AK:"Alaska",AL:"Alabama",AR:"Arkansas",AZ:"Arizona",CA:"California",CO:"Colorado",CT:"Connecticut",
     DC:"D.C.",DE:"Delaware",FL:"Florida",GA:"Georgia",HI:"Hawaii",IA:"Iowa",ID:"Idaho",IL:"Illinois",
@@ -34,32 +25,33 @@
     SC:"South Carolina",SD:"South Dakota",TN:"Tennessee",TX:"Texas",UT:"Utah",VA:"Virginia",
     VT:"Vermont",WA:"Washington",WI:"Wisconsin",WV:"West Virginia",WY:"Wyoming"
   };
-  var SHADES = ["#dbeaed", "#a7d0d8", "#6fb0bc", "#3f8b99", "#1f5f6b"];
-  var NODATA = "#eceef1", INK = "#16181c", MUTE = "#5c616b";
+  var TEAL = "#2f7d8f", TEAL_DK = "#1f5f6b", CRIMSON = "#a83435";
+  var LAND = "#eef2f4", LAND_ST = "#d5dae0", INK = "#16181c", MUTE = "#5c616b";
   var NS = "http://www.w3.org/2000/svg";
+  var MAXR = 34;
 
-  var byCode = {};
-  G.states.forEach(function (s) { byCode[s.st] = s; });
-  var P = G.labels.length - 1;          // selected period index (default latest)
-  var selected = null;                   // selected state code
+  var byCode = {};   G.states.forEach(function (s) { byCode[s.st] = s; });
+  var usByCode = {}; U.states.forEach(function (s) { usByCode[s.code] = s; });
+  var P = G.labels.length - 1;   // selected period (default latest)
+  var selected = null;
 
   function num(v) { return Math.round(v || 0).toLocaleString("en-US"); }
   function val(code) { var s = byCode[code]; return s ? (s.units[P] || 0) : 0; }
-
-  // Quantile thresholds over states with data, for 5-bin coloring.
-  function thresholds() {
-    var vals = G.states.map(function (s) { return s.units[P] || 0; }).filter(function (v) { return v > 0; }).sort(function (a, b) { return a - b; });
-    var q = [];
-    [0.2, 0.4, 0.6, 0.8].forEach(function (p) { q.push(vals[Math.floor(p * (vals.length - 1))]); });
-    return q;
+  // Global max across ALL periods, so bubbles are comparable year-to-year —
+  // flip the year and you can see the whole market shrink.
+  var GMAX = Math.max.apply(null, G.states.map(function (s) { return Math.max.apply(null, s.units); }));
+  function maxVal() { return GMAX; }
+  function rOf(v, mx) { return v > 0 ? Math.max(2.5, Math.sqrt(v / mx) * MAXR) : 0; }
+  function opOf(v, mx) { return 0.42 + 0.4 * Math.sqrt(v / mx); }
+  function el(name, attrs, text) {
+    var e = document.createElementNS(NS, name);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (text != null) e.textContent = text;
+    return e;
   }
-  function colorFor(v, th) {
-    if (!v || v <= 0) return NODATA;
-    var b = 0; for (var i = 0; i < th.length; i++) if (v > th[i]) b = i + 1;
-    return SHADES[b];
-  }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]; }); }
 
-  // ---- build DOM shell -----------------------------------------------------
+  // ---- shell ---------------------------------------------------------------
   host.innerHTML =
     '<div class="um-controls"><span class="um-lbl">Trailing 12 months ending</span>' +
     '<div class="um-periods" id="um-periods"></div></div>' +
@@ -70,7 +62,6 @@
         '<div class="um-toplabel">Top states</div><ol class="um-top" id="um-top"></ol></div>' +
     '</div>';
 
-  // period buttons
   document.getElementById("um-periods").innerHTML = G.labels.map(function (l, i) {
     return '<button class="um-pill' + (i === P ? " active" : "") + '" data-p="' + i + '">' + l.replace("TTM ", "") + "</button>";
   }).join("");
@@ -82,72 +73,76 @@
     };
   });
 
-  // ---- SVG map -------------------------------------------------------------
-  function el(name, attrs, text) {
-    var e = document.createElementNS(NS, name);
-    for (var k in attrs) e.setAttribute(k, attrs[k]);
-    if (text != null) e.textContent = text;
-    return e;
-  }
+  // ---- the map -------------------------------------------------------------
   function drawMap() {
-    var COLS = 11, ROWS = 8, CELL = 64, T = 58;
-    var W = COLS * CELL, H = ROWS * CELL;
-    var th = thresholds();
-    var svg = el("svg", { viewBox: "0 0 " + W + " " + H, width: "100%", role: "img",
+    var svg = el("svg", { viewBox: U.viewBox, width: "100%", role: "img",
       "aria-label": "U.S. pontoon registrations by state" });
     svg.style.height = "auto"; svg.style.display = "block";
-    Object.keys(POS).forEach(function (code) {
-      var r = POS[code][0], c = POS[code][1];
-      var x = c * CELL, y = r * CELL, v = val(code);
-      var fill = colorFor(v, th);
-      var dark = fill === SHADES[3] || fill === SHADES[4];
-      var g = el("g", { transform: "translate(" + x + "," + y + ")", cursor: "pointer", "data-st": code });
-      g.appendChild(el("rect", { width: T, height: T, rx: 8, fill: fill,
-        stroke: code === selected ? "#a83435" : "#ffffff", "stroke-width": code === selected ? 3 : 1.5 }));
-      g.appendChild(el("text", { x: T / 2, y: 25, "text-anchor": "middle", "font-size": 15,
-        "font-weight": 700, fill: dark ? "#fff" : INK }, code));
-      g.appendChild(el("text", { x: T / 2, y: 42, "text-anchor": "middle", "font-size": 11,
-        fill: dark ? "rgba(255,255,255,.85)" : MUTE }, v > 0 ? num(v) : "–"));
-      g.addEventListener("mouseenter", function () { selectState(code); });
-      g.addEventListener("click", function () { selectState(code); });
-      svg.appendChild(g);
+
+    // base land: state polygons
+    var land = el("g", {});
+    U.states.forEach(function (s) {
+      var p = el("path", { d: s.d, fill: LAND, stroke: LAND_ST, "stroke-width": 0.6,
+        cursor: "pointer", "data-st": s.code });
+      p.addEventListener("mouseenter", function () { selectState(s.code); });
+      p.addEventListener("click", function () { selectState(s.code); });
+      land.appendChild(p);
     });
+    svg.appendChild(land);
+
+    // heat bubbles, largest first so small ones stay clickable on top
+    var mx = maxVal();
+    var bub = el("g", {});
+    U.states.slice().map(function (s) { return { s: s, v: val(s.code) }; })
+      .sort(function (a, b) { return b.v - a.v; })
+      .forEach(function (o) {
+        if (o.v <= 0) return;
+        var s = o.s, sel = s.code === selected;
+        var c = el("circle", { cx: s.cx, cy: s.cy, r: rOf(o.v, mx),
+          fill: TEAL, "fill-opacity": opOf(o.v, mx),
+          stroke: sel ? CRIMSON : TEAL_DK, "stroke-width": sel ? 2.5 : 0.8,
+          cursor: "pointer", "data-st": s.code });
+        c.addEventListener("mouseenter", function () { selectState(s.code); });
+        c.addEventListener("click", function () { selectState(s.code); });
+        bub.appendChild(c);
+      });
+    svg.appendChild(bub);
+
     var slot = document.getElementById("um-svg");
     slot.innerHTML = ""; slot.appendChild(svg);
   }
 
   function drawLegend() {
-    var th = thresholds();
-    var edges = [0].concat(th);
-    var items = SHADES.map(function (sh, i) {
-      var lo = i === 0 ? 1 : Math.round(edges[i]) + 1;
-      var hi = i < th.length ? Math.round(th[i]) : null;
-      var rng = i === SHADES.length - 1 ? Math.round(edges[edges.length - 1]) + "+" : lo + "–" + hi;
-      return '<span class="um-sw"><i style="background:' + sh + '"></i>' + rng + "</span>";
-    }).join("");
-    document.getElementById("um-legend").innerHTML =
-      '<span class="um-sw"><i style="background:' + NODATA + '"></i>none</span>' + items +
-      '<span class="um-unit">registrations</span>';
+    var mx = maxVal();
+    function nice(v) { var m = Math.pow(10, Math.floor(Math.log10(v))); return Math.round(v / m) * m; }
+    var refs = [nice(mx), nice(mx / 4), nice(mx / 16)].filter(function (v, i, a) { return v > 0 && a.indexOf(v) === i; });
+    var maxR = rOf(refs[0], mx);
+    var W = maxR * 2 + 8, H = maxR * 2 + 14;
+    var s = el("svg", { viewBox: "0 0 " + W + " " + H, width: W, height: H });
+    refs.forEach(function (v) {
+      var r = rOf(v, mx), cx = W / 2, cy = H - 6 - r;
+      s.appendChild(el("circle", { cx: cx, cy: cy, r: r, fill: "none", stroke: TEAL_DK, "stroke-width": 1 }));
+      s.appendChild(el("text", { x: cx, y: H - 6 - 2 * r + 10, "text-anchor": "middle", "font-size": 9, fill: MUTE }, num(v)));
+    });
+    var wrap = document.getElementById("um-legend");
+    wrap.innerHTML = "";
+    var lab = document.createElement("span");
+    lab.className = "um-unit"; lab.textContent = "bubble size = registrations";
+    wrap.appendChild(s); wrap.appendChild(lab);
   }
 
-  // ---- detail + top list ---------------------------------------------------
-  function selectState(code) {
-    selected = code;
-    drawMap();       // redraw to move the selection outline
-    drawDetail();
+  // ---- detail + top list (shared with prior version) -----------------------
+  function selectState(code) { selected = code; drawMap(); drawDetail(); markTop(); }
+  function topStates(n) {
+    var arr = G.states.slice().sort(function (a, b) { return (b.units[P] || 0) - (a.units[P] || 0); });
+    return n ? arr.slice(0, n) : arr;
   }
   function drawDetail() {
-    var box = document.getElementById("um-detail");
-    var code = selected || topStates(1)[0].st;
-    selected = code;
-    var s = byCode[code];
-    var v = s.units[P] || 0;
-    var natl = G.national[P] || 1;
+    var code = selected || topStates(1)[0].st; selected = code;
+    var s = byCode[code], v = s.units[P] || 0, natl = G.national[P] || 1;
     var rank = topStates(0).findIndex(function (x) { return x.st === code; }) + 1;
-    var counties = (s.counties || []).slice()
-      .map(function (c) { return { c: c.c, u: c.units[P] || 0 }; })
-      .filter(function (c) { return c.u > 0; })
-      .sort(function (a, b) { return b.u - a.u; }).slice(0, 6);
+    var counties = (s.counties || []).map(function (c) { return { c: c.c, u: c.units[P] || 0 }; })
+      .filter(function (c) { return c.u > 0; }).sort(function (a, b) { return b.u - a.u; }).slice(0, 6);
     var cmax = counties.length ? counties[0].u : 1;
     var cHtml = counties.length
       ? counties.map(function (c) {
@@ -156,31 +151,27 @@
             '<span class="cv">' + num(c.u) + "</span></div>";
         }).join("")
       : '<div class="um-none">No county detail for this period.</div>';
-    box.innerHTML =
+    document.getElementById("um-detail").innerHTML =
       '<div class="um-dname">' + esc(NAME[code] || code) + '</div>' +
-      '<div class="um-dfigs"><span class="v">' + num(v) + '</span><span class="l">registrations · ' +
-        G.labels[P] + '</span></div>' +
-      '<div class="um-dsub">' + (v / natl * 100).toFixed(1) + '% of U.S.' +
-        (rank ? ' · #' + rank + ' of ' + G.states.length : "") + '</div>' +
+      '<div class="um-dfigs"><span class="v">' + num(v) + '</span><span class="l">registrations · ' + G.labels[P] + '</span></div>' +
+      '<div class="um-dsub">' + (v / natl * 100).toFixed(1) + '% of U.S.' + (rank ? ' · #' + rank + ' of ' + G.states.length : "") + '</div>' +
       '<div class="um-ctitle">Top counties</div>' + cHtml;
   }
-  function topStates(n) {
-    var arr = G.states.slice().sort(function (a, b) { return (b.units[P] || 0) - (a.units[P] || 0); });
-    return n ? arr.slice(0, n) : arr;
-  }
   function drawTop() {
-    var top = topStates(10);
-    document.getElementById("um-top").innerHTML = top.map(function (s) {
+    document.getElementById("um-top").innerHTML = topStates(10).map(function (s) {
       return '<li data-st="' + s.st + '" class="' + (s.st === selected ? "on" : "") + '">' +
         '<span class="tn">' + esc(NAME[s.st] || s.st) + '</span>' +
         '<span class="tv">' + num(s.units[P] || 0) + "</span></li>";
     }).join("");
     Array.prototype.forEach.call(document.querySelectorAll("#um-top li"), function (li) {
-      li.onclick = function () { selectState(li.getAttribute("data-st")); drawTop(); };
+      li.onclick = function () { selectState(li.getAttribute("data-st")); };
     });
   }
-
-  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]; }); }
+  function markTop() {
+    Array.prototype.forEach.call(document.querySelectorAll("#um-top li"), function (li) {
+      li.classList.toggle("on", li.getAttribute("data-st") === selected);
+    });
+  }
 
   function draw() { drawMap(); drawLegend(); drawDetail(); drawTop(); }
   draw();
