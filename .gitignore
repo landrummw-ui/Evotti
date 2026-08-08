@@ -1,0 +1,18 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# This repo deploys PUBLICLY to Netlify from the root. Anything committed here
+# is reachable at a public URL. Keep internal / sensitive material out.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Internal documents — cost estimates, proposals, working notes (kept local only)
+Docs/
+.claude/Prompts/
+
+# Secrets — never commit
+.env
+.env.*
+*.local
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
